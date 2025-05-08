@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +29,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Lecture des feedbacks et calcul de l'écart moyen
+    let feedbackPhrase = '';
+    try {
+      const FEEDBACK_PATH = path.join(process.cwd(), 'feedbacks.json');
+      const content = await fs.readFile(FEEDBACK_PATH, 'utf-8');
+      const feedbacks = JSON.parse(content);
+      if (Array.isArray(feedbacks) && feedbacks.length >= 2) {
+        const last = feedbacks.slice(-5); // 5 derniers
+        let sumPct = 0;
+        let count = 0;
+        last.forEach((f: any) => {
+          const est = Number(f.estimation);
+          const real = Number(f.realDuration);
+          if (est > 0 && real > 0) {
+            sumPct += ((real - est) / est) * 100;
+            count++;
+          }
+        });
+        if (count > 0) {
+          const avgPct = sumPct / count;
+          const absPct = Math.abs(avgPct).toFixed(1);
+          const tendance = avgPct > 0 ? 'trop optimiste' : 'trop pessimiste';
+          feedbackPhrase = `\nSur les ${count} dernières fonctionnalités, l'estimation était en moyenne ${absPct}% ${tendance}. Merci d'en tenir compte pour ajuster l'estimation.`;
+        }
+      }
+    } catch {}
+
     const prompt = `
 Tu es un assistant produit.
 
@@ -37,6 +66,7 @@ Problématique de données : ${dataConcern}
 ${startDatePrompt}
 ${velocityPrompt}
 ${teamPrompt}
+${feedbackPhrase}
 
 Découpe la fonctionnalité en tâches techniques avec estimation.
 Puis calcule une date de livraison réaliste en tenant compte des contraintes ci-dessus.
