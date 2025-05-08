@@ -218,7 +218,7 @@ export default function Home() {
     <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
-      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
+      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
         {/* Bloc 1 : Saisie & contexte */}
         <section className="bg-white p-8 rounded-xl shadow border border-blue-100 flex flex-col gap-6 col-span-1">
           <h2 className="text-2xl font-bold mb-4 text-blue-800">Saisie & contexte</h2>
@@ -599,11 +599,10 @@ export default function Home() {
           )}
         </section>
 
-        {/* Bloc 3 : Résumé (à droite) */}
+        {/* Bloc 3 : Résumé */}
         <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1">
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Résumé</h2>
           {(() => {
-            // Retire la partie Tâches Techniques du résumé
             let resume = result
               ? result
                 .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
@@ -616,86 +615,86 @@ export default function Home() {
                 .replace(/[\n\r]{2,}/g, '\n\n')
                 .trim()
               : '';
-            // Met en gras les dates (jj/mm/aaaa)
             resume = resume.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
-            // Met en gras le total de jours estimés (ex: "11 jours", "13 jours")
             resume = resume.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
             return resume ? (
               <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
             ) : null;
           })()}
         </section>
-      </div>
 
-      {/* Bloc 3 : Feedback & historique */}
-      <section className="w-full max-w-5xl bg-white p-8 rounded-xl shadow border border-yellow-100 flex flex-col gap-8 mb-10">
-        <h2 className="text-2xl font-bold mb-2 text-yellow-800">Feedback & historique</h2>
-        {/* Feedback post-livraison */}
-        <div className="mb-8">
-          {!showFeedback && (
-            <button
-              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
-              onClick={() => {
-                setShowFeedback(true)
-                setFeedbackEstimation(extractTotalDays(result).toString())
-              }}
-            >
-              Saisir le feedback post-livraison
-            </button>
-          )}
-          {showFeedback && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mt-4">
-              <div className="mb-2 font-bold text-yellow-800">Feedback post-livraison</div>
-              <div className="mb-2">
-                <label className="block text-sm font-bold mb-1">Estimation initiale (jours)</label>
-                <input type="number" className="p-2 border rounded w-full" value={feedbackEstimation} onChange={e => setFeedbackEstimation(e.target.value)} />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-bold mb-1">Durée réelle (jours)</label>
-                <input type="number" className="p-2 border rounded w-full" value={feedbackReal} onChange={e => setFeedbackReal(e.target.value)} />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-bold mb-1">Commentaire</label>
-                <textarea className="p-2 border rounded w-full" value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} rows={3} />
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
-                <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
-              </div>
+        {/* Bloc 4 : Feedback & historique */}
+        <section className="bg-white p-8 rounded-xl shadow border border-yellow-100 flex flex-col gap-8 col-span-1">
+          <h2 className="text-2xl font-bold mb-2 text-yellow-800">Feedback & historique</h2>
+          {/* Feedback post-livraison */}
+          {result && (
+            <div className="mb-8">
+              {!showFeedback && (
+                <button
+                  className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                  onClick={() => {
+                    setShowFeedback(true)
+                    setFeedbackEstimation(extractTotalDays(result).toString())
+                  }}
+                >
+                  Saisir le feedback post-livraison
+                </button>
+              )}
+              {showFeedback && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mt-4">
+                  <div className="mb-2 font-bold text-yellow-800">Feedback post-livraison</div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold mb-1">Estimation initiale (jours)</label>
+                    <input type="number" className="p-2 border rounded w-full" value={feedbackEstimation} onChange={e => setFeedbackEstimation(e.target.value)} />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold mb-1">Durée réelle (jours)</label>
+                    <input type="number" className="p-2 border rounded w-full" value={feedbackReal} onChange={e => setFeedbackReal(e.target.value)} />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold mb-1">Commentaire</label>
+                    <textarea className="p-2 border rounded w-full" value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} rows={3} />
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
+                    <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
+                  </div>
+                </div>
+              )}
+              {feedbackSuccess && (
+                <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
+              )}
             </div>
           )}
-          {feedbackSuccess && (
-            <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
-          )}
-        </div>
-        {/* Historique des feedbacks */}
-        <div>
-          <div className="font-bold text-gray-800 mb-2">Historique des feedbacks</div>
-          {feedbackHistory.length === 0 && <div className="text-gray-500 text-sm">Aucun feedback enregistré pour l'instant.</div>}
-          {feedbackHistory.length > 0 && (
-            <table className="w-full text-xs border border-gray-200 rounded">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="p-2 text-left">Date</th>
-                  <th className="p-2 text-left">Estimation (j)</th>
-                  <th className="p-2 text-left">Réel (j)</th>
-                  <th className="p-2 text-left">Commentaire</th>
-                </tr>
-              </thead>
-              <tbody>
-                {feedbackHistory.map((f, idx) => (
-                  <tr key={idx} className="border-t border-gray-100">
-                    <td className="p-2">{new Date(f.date).toLocaleDateString()}</td>
-                    <td className="p-2">{f.estimation}</td>
-                    <td className="p-2">{f.realDuration}</td>
-                    <td className="p-2">{f.comment}</td>
+          {/* Historique des feedbacks */}
+          <div>
+            <div className="font-bold text-gray-800 mb-2">Historique des feedbacks</div>
+            {feedbackHistory.length === 0 && <div className="text-gray-500 text-sm">Aucun feedback enregistré pour l'instant.</div>}
+            {feedbackHistory.length > 0 && (
+              <table className="w-full text-xs border border-gray-200 rounded">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="p-2 text-left">Date</th>
+                    <th className="p-2 text-left">Estimation (j)</th>
+                    <th className="p-2 text-left">Réel (j)</th>
+                    <th className="p-2 text-left">Commentaire</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
+                </thead>
+                <tbody>
+                  {feedbackHistory.map((f, idx) => (
+                    <tr key={idx} className="border-t border-gray-100">
+                      <td className="p-2">{new Date(f.date).toLocaleDateString()}</td>
+                      <td className="p-2">{f.estimation}</td>
+                      <td className="p-2">{f.realDuration}</td>
+                      <td className="p-2">{f.comment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
