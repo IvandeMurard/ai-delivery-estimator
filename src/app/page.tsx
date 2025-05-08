@@ -173,14 +173,38 @@ export default function Home() {
           ))}
 
           {/* Bloc découpage technique : chaque point sur une seule ligne */}
-          <pre className="whitespace-pre-line text-gray-900 bg-blue-50 p-3 rounded border border-blue-100 mb-4">
-            {result &&
+          <div className="bg-blue-50 p-3 rounded border border-blue-100 mb-4">
+            {(() => {
               // Extraction des lignes du tableau Markdown ou des points techniques
-              (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/))).map(
-                l => l.trim()
-              ).filter(Boolean).join('\n')
-            }
-          </pre>
+              const lines = (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/)))
+                .map(l => l.replace(/\s+/g, ' ').trim())
+                .filter(Boolean);
+              return (
+                <ul className="list-decimal pl-6">
+                  {lines.map((l, idx) => (
+                    <li key={idx} className="whitespace-nowrap overflow-x-auto text-gray-900">{l}</li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </div>
+
+          {/* Bloc résumé extrait du texte (hors tableau et calculs secondaires) */}
+          {(() => {
+            // Extraction du résumé (hors tableau et calculs secondaires)
+            const summary = result
+              .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
+              .replace(/\|.*\|/g, "")
+              .replace(/Calculs secondaires[\s\S]*/i, "")
+              .replace(/[\n\r]{2,}/g, '\n')
+              .trim();
+            return summary ? (
+              <div className="bg-gray-100 p-4 rounded border border-gray-200 mb-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Résumé</h3>
+                <div className="text-gray-900 whitespace-pre-line">{summary}</div>
+              </div>
+            ) : null;
+          })()}
 
           {advancedSection && (
             <>
