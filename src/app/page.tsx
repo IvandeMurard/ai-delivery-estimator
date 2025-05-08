@@ -24,6 +24,8 @@ export default function Home() {
   const [feature, setFeature] = useState("")
   const [result, setResult] = useState("")
   const [capacity, setCapacity] = useState(1)
+  const [integrationLevel, setIntegrationLevel] = useState("")
+  const [dataConcern, setDataConcern] = useState("")
   const [showAdvanced, setShowAdvanced] = useState(false)
   const capacityInputRef = useRef<HTMLInputElement>(null)
 
@@ -34,7 +36,12 @@ export default function Home() {
     const response = await fetch("/api/estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ feature, capacity })
+      body: JSON.stringify({
+        feature,
+        capacity,
+        dataConcern,
+        integrationLevel,
+      })
     })
 
     const data = await response.json()
@@ -79,6 +86,31 @@ export default function Home() {
             Recalculer avec X devs
           </button>
         </div>
+
+        <label className="block font-semibold mt-4">🔄 Niveau d'intégration SI</label>
+        <select
+          className="w-full p-2 border border-gray-300 rounded mb-4"
+          value={integrationLevel}
+          onChange={(e) => setIntegrationLevel(e.target.value)}
+        >
+          <option value="">-- Sélectionner --</option>
+          <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
+          <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
+          <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
+        </select>
+
+        <label className="block font-semibold mt-4">📊 Problématique de données</label>
+        <select
+          className="w-full p-2 border border-gray-300 rounded mb-4"
+          value={dataConcern}
+          onChange={(e) => setDataConcern(e.target.value)}
+        >
+          <option value="">-- Sélectionner --</option>
+          <option value="Aucune problématique de données">Aucune problématique</option>
+          <option value="Données à migrer ou à nettoyer">Migration/nettoyage de données</option>
+          <option value="Connexion à des sources de données externes">Connexion à des sources externes</option>
+          <option value="Respect de la RGPD ou contraintes légales">Contraintes légales (RGPD, etc.)</option>
+        </select>
 
         <button
           onClick={handleSubmit}
