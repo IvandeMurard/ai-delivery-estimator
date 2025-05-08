@@ -61,6 +61,16 @@ export default function Home() {
   const [feedbackSuccess, setFeedbackSuccess] = useState(false)
   // Historique des feedbacks
   const [feedbackHistory, setFeedbackHistory] = useState<any[]>([])
+  // Pour le bouton scroll to top
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 200)
+    }
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const handleScanCodebase = async () => {
     setIsScanning(true)
@@ -106,6 +116,7 @@ export default function Home() {
       return
     }
     setResult(data.output)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Suggestion de tâches via API
@@ -287,8 +298,9 @@ export default function Home() {
                   >Modifier la description</button>
                 </div>
                 <button
-                  className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 w-full"
+                  type="button"
                   onClick={handleSubmit}
+                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
                   disabled={tasks.length === 0 || tasks.some(t => !t.trim())}
                 >Valider ce découpage et estimer</button>
               </div>
@@ -473,6 +485,7 @@ export default function Home() {
               <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
             </div>
             <button
+              type="button"
               onClick={handleSubmit}
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
             >
@@ -695,6 +708,18 @@ export default function Home() {
           </div>
         </section>
       </div>
+      {/* Bouton flottant scroll to top */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 z-50 bg-blue-700 text-white rounded-full shadow-lg p-3 hover:bg-blue-900 transition-all"
+          aria-label="Remonter en haut de page"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      )}
     </main>
   )
 }
