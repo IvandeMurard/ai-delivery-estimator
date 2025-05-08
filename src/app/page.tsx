@@ -161,28 +161,25 @@ export default function Home() {
 
       {result && (
         <section className="w-full max-w-xl bg-white p-6 rounded shadow mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Résumé de l'estimation</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Découpage technique</h2>
 
-          {deliveryDate && (
-            <div className="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">
+          {/* Extraction et mise en valeur des dates de livraison */}
+          {result && Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi)).map((m, i) => (
+            <div key={i} className="text-2xl font-extrabold text-green-800 mb-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-3 justify-center">
               <span role="img" aria-label="date">📆</span>
               <span>Livraison estimée :</span>
-              <span className="underline decoration-green-400">{deliveryDate}</span>
+              <span className="underline decoration-green-400">{m[1]}</span>
             </div>
-          )}
+          ))}
 
-          <div className="mb-4 border-b border-gray-200"></div>
-
-          {/* Bloc découpage technique (extraction simple par regex ou heuristique) */}
-          <h3 className="text-lg font-bold text-blue-700 mt-4 mb-2">Découpage technique</h3>
-          <pre className="whitespace-pre-wrap text-gray-900 bg-blue-50 p-3 rounded border border-blue-100 mb-4">
-            {result && result.match(/\|.*\|/g) ? result.match(/\|.*\|/g)?.join('\n') : result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/Calculs secondaires[\s\S]*/i, "")}
-          </pre>
-
-          {/* Bloc résumé (reste du texte hors découpage et calculs secondaires) */}
-          <h3 className="text-lg font-bold text-gray-800 mt-4 mb-2">Résumé</h3>
-          <pre className="whitespace-pre-wrap text-gray-900">
-            {result && result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/\|.*\|/g, "").replace(/Calculs secondaires[\s\S]*/i, "")}
+          {/* Bloc découpage technique : chaque point sur une seule ligne */}
+          <pre className="whitespace-pre-line text-gray-900 bg-blue-50 p-3 rounded border border-blue-100 mb-4">
+            {result &&
+              // Extraction des lignes du tableau Markdown ou des points techniques
+              (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/))).map(
+                l => l.trim()
+              ).filter(Boolean).join('\n')
+            }
           </pre>
 
           {advancedSection && (
