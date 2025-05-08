@@ -161,16 +161,19 @@ export default function Home() {
 
       {result && (
         <section className="w-full max-w-2xl bg-white p-8 rounded-xl shadow mb-10 space-y-8">
-          {/* Bloc vert date de livraison */}
+          {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
           {(() => {
-            const dateMatch = result.match(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
-            return dateMatch ? (
-              <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
-                <span role="img" aria-label="date">📆</span>
-                <span>Livraison estimée :</span>
-                <span className="underline decoration-green-400">{dateMatch[1]}</span>
-              </div>
-            ) : null;
+            const dateMatches = Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi));
+            if (dateMatches.length > 0) {
+              return (
+                <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
+                  <span role="img" aria-label="date">📆</span>
+                  <span>Livraison estimée :</span>
+                  <span className="underline decoration-green-400">{dateMatches[0][1]}</span>
+                </div>
+              );
+            }
+            return null;
           })()}
 
           {/* Bloc Tâches techniques sous forme de tableau */}
@@ -179,24 +182,21 @@ export default function Home() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-blue-200">
-                  <th className="py-2 px-3 font-semibold">Tâche</th>
-                  <th className="py-2 px-3 font-semibold">Estimation</th>
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg">Tâche</th>
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg">Estimation</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
-                  // Extraction des lignes du tableau Markdown ou des points techniques
                   const lines = (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/)))
                     .map(l => l.replace(/\s+/g, ' ').trim())
                     .filter(Boolean);
-                  // Extraction tâche/estimation
                   return lines.map((l, idx) => {
-                    // Essaye de séparer la tâche de l'estimation (ex: "1. Tâche (2 jours)")
                     const match = l.match(/^(?:\d+\.\s*)?(.*?)(\(([^\)]*)\))?$/);
                     return (
                       <tr key={idx} className="border-b border-blue-100">
-                        <td className="py-2 px-3 align-top">{match ? match[1].trim() : l}</td>
-                        <td className="py-2 px-3 align-top text-blue-700 font-semibold">{match && match[3] ? match[3] : ''}</td>
+                        <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
+                        <td className="py-2 px-3 align-top font-bold text-blue-800">{match && match[3] ? match[3] : ''}</td>
                       </tr>
                     );
                   });
