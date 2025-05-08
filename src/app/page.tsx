@@ -218,9 +218,9 @@ export default function Home() {
     <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
-      <div className="w-full max-w-screen-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+      <div className="w-full max-w-screen-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12 overflow-x-auto">
         {/* Bloc 1 : Saisie & contexte */}
-        <section className="bg-white p-8 rounded-xl shadow border border-blue-100 flex flex-col gap-6 col-span-1">
+        <section className="bg-white p-8 rounded-xl shadow border border-blue-100 flex flex-col gap-6 col-span-1 min-w-0 flex-1">
           <h2 className="text-2xl font-bold mb-4 text-blue-800">Saisie & contexte</h2>
           {/* Etape 1 : Découpage en tâches techniques */}
           <div className="mb-4 pb-4 border-b border-blue-100">
@@ -482,7 +482,7 @@ export default function Home() {
         </section>
 
         {/* Bloc 2 : Estimation IA */}
-        <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1">
+        <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1 min-w-0 flex-1">
           <h2 className="text-2xl font-bold mb-2 text-green-800">Estimation IA</h2>
           {result && (
             <div className="space-y-8">
@@ -600,7 +600,7 @@ export default function Home() {
         </section>
 
         {/* Bloc 3 : Résumé */}
-        <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1">
+        <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1 min-w-0 flex-1">
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Résumé</h2>
           {(() => {
             let resume = result
@@ -624,7 +624,7 @@ export default function Home() {
         </section>
 
         {/* Bloc 4 : Feedback & historique */}
-        <section className="bg-white p-8 rounded-xl shadow border border-yellow-100 flex flex-col gap-8 col-span-1">
+        <section className="bg-white p-8 rounded-xl shadow border border-yellow-100 flex flex-col gap-8 col-span-1 min-w-0 flex-1">
           <h2 className="text-2xl font-bold mb-2 text-yellow-800">Feedback & historique</h2>
           {/* Feedback post-livraison */}
           {result && (
