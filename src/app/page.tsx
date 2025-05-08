@@ -222,11 +222,11 @@ export default function Home() {
         {/* Bloc 1 : Saisie & contexte */}
         <section className="bg-white p-8 rounded-xl shadow border border-blue-100 flex flex-col gap-6 col-span-1">
           <h2 className="text-2xl font-bold mb-4 text-blue-800">Saisie & contexte</h2>
-          {/* Etape 1 */}
+          {/* Etape 1 : Découpage en tâches techniques */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">1</span>
-              <span className="text-lg font-bold text-blue-900">Décrire la fonctionnalité</span>
+              <span className="text-lg font-bold text-blue-900">Découper la fonctionnalité en tâches techniques</span>
             </div>
             <textarea
               value={feature}
@@ -235,12 +235,131 @@ export default function Home() {
               className="w-full p-4 border border-gray-300 rounded mb-2 text-gray-900"
               rows={4}
             />
+            {/* Workflow suggestion/validation des tâches */}
+            {!isEditingTasks && (
+              <button
+                onClick={handleSuggestTasks}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full mt-2"
+                disabled={isSuggesting || !feature.trim()}
+              >
+                {isSuggesting ? "Découpage en cours..." : "Découper en tâches"}
+              </button>
+            )}
+            {/* Affichage et édition des tâches */}
+            {isEditingTasks && (
+              <div className="mt-4">
+                <h3 className="text-lg font-bold mb-2 text-blue-800">Découpage proposé</h3>
+                <ul className="mb-4">
+                  {tasks.map((task, idx) => (
+                    <li key={idx} className="flex items-center gap-2 mb-2">
+                      <span className="text-gray-500 select-none cursor-move"
+                        title="Glisser pour réordonner"
+                        draggable
+                        onDragStart={e => e.dataTransfer.setData('text/plain', idx.toString())}
+                        onDrop={e => {
+                          e.preventDefault();
+                          const from = Number(e.dataTransfer.getData('text/plain'));
+                          handleTaskMove(from, idx);
+                        }}
+                        onDragOver={e => e.preventDefault()}
+                      >☰</span>
+                      <input
+                        className="flex-1 p-2 border border-gray-300 rounded text-gray-900"
+                        value={task}
+                        onChange={e => handleTaskChange(idx, e.target.value)}
+                      />
+                      <button
+                        className="ml-2 text-red-600 hover:text-red-800 font-bold"
+                        onClick={() => handleTaskDelete(idx)}
+                        title="Supprimer cette tâche"
+                      >✕</button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    className="bg-gray-200 px-3 py-1 rounded text-gray-800 font-bold hover:bg-gray-300"
+                    onClick={handleTaskAdd}
+                  >+ Ajouter une tâche</button>
+                  <button
+                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                    onClick={() => setIsEditingTasks(false)}
+                  >Modifier la description</button>
+                </div>
+                <button
+                  className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 w-full"
+                  onClick={handleSubmit}
+                  disabled={tasks.length === 0 || tasks.some(t => !t.trim())}
+                >Valider ce découpage et estimer</button>
+              </div>
+            )}
           </div>
-          {/* Etape 2 */}
+          {/* Etape 2 : Champs avancés (facultatif) */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">2</span>
-              <span className="text-lg font-bold text-blue-900">Choisir le repo GitHub</span>
+              <span className="text-lg font-bold text-blue-900">Champs avancés <span className="text-xs text-blue-500">(facultatif)</span></span>
+            </div>
+            <button
+              type="button"
+              className="mb-2 text-blue-600 underline text-sm"
+              onClick={() => setShowAdvancedFields((v) => !v)}
+            >
+              {showAdvancedFields ? "Masquer les champs avancés" : "Afficher les champs avancés"}
+            </button>
+            {showAdvancedFields && (
+              <>
+                <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
+                <input
+                  type="date"
+                  className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+                <label className="block font-semibold mt-2 text-blue-700">🔄 Niveau d'intégration SI</label>
+                <select
+                  className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
+                  value={integrationLevel}
+                  onChange={(e) => setIntegrationLevel(e.target.value)}
+                >
+                  <option value="">-- Sélectionner --</option>
+                  <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
+                  <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
+                  <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
+                </select>
+                <label className="block font-semibold mt-2 text-purple-700">📊 Problématique de données</label>
+                <div className="mb-2 flex flex-col gap-2">
+                  {[
+                    "Aucune problématique de données",
+                    "Données à migrer ou à nettoyer",
+                    "Connexion à des sources de données externes",
+                    "Respect de la RGPD ou contraintes légales"
+                  ].map(option => (
+                    <label key={option} className="flex items-center gap-2 text-gray-900">
+                      <input
+                        type="checkbox"
+                        value={option}
+                        checked={dataConcern.includes(option)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setDataConcern([...dataConcern, option])
+                          } else {
+                            setDataConcern(dataConcern.filter(v => v !== option))
+                          }
+                        }}
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          {/* Etape 3 : Connexion GitHub (facultatif) */}
+          <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
+              <span className="text-lg font-bold text-blue-900">Connexion GitHub <span className='text-xs text-blue-500'>(facultatif)</span></span>
             </div>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
@@ -281,11 +400,11 @@ export default function Home() {
               )}
             </div>
           </div>
-          {/* Etape 3 */}
+          {/* Etape 4 : Analyse du code existant (facultatif) */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
-              <span className="text-lg font-bold text-blue-900">Analyser le code existant</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
+              <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
             </div>
             <button
               className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900"
@@ -306,10 +425,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 4 */}
+          {/* Etape 5 : Capacité équipe */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
               <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
             </div>
             <button
@@ -347,10 +466,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 5 */}
+          {/* Etape 6 */}
           <div className="mb-2">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
               <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
             </div>
             <button
