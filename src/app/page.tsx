@@ -26,7 +26,9 @@ export default function Home() {
   const [capacity, setCapacity] = useState(1)
   const [integrationLevel, setIntegrationLevel] = useState("")
   const [dataConcern, setDataConcern] = useState("")
+  const [startDate, setStartDate] = useState("")
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false)
   const capacityInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = async () => {
@@ -41,6 +43,7 @@ export default function Home() {
         capacity,
         dataConcern,
         integrationLevel,
+        startDate,
       })
     })
 
@@ -65,6 +68,7 @@ export default function Home() {
           rows={5}
         />
 
+        <label className="block font-semibold mb-2">👥 Nombre de développeurs</label>
         <div className="flex gap-2 mb-4">
           <input
             ref={capacityInputRef}
@@ -87,30 +91,52 @@ export default function Home() {
           </button>
         </div>
 
-        <label className="block font-semibold mt-4">🔄 Niveau d'intégration SI</label>
-        <select
-          className="w-full p-2 border border-gray-300 rounded mb-4"
-          value={integrationLevel}
-          onChange={(e) => setIntegrationLevel(e.target.value)}
+        {/* Bouton pour afficher/masquer les champs avancés */}
+        <button
+          type="button"
+          className="mb-4 text-blue-600 underline text-sm"
+          onClick={() => setShowAdvancedFields((v) => !v)}
         >
-          <option value="">-- Sélectionner --</option>
-          <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
-          <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
-          <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
-        </select>
+          {showAdvancedFields ? "Masquer les champs avancés" : "Afficher les champs avancés"}
+        </button>
 
-        <label className="block font-semibold mt-4">📊 Problématique de données</label>
-        <select
-          className="w-full p-2 border border-gray-300 rounded mb-4"
-          value={dataConcern}
-          onChange={(e) => setDataConcern(e.target.value)}
-        >
-          <option value="">-- Sélectionner --</option>
-          <option value="Aucune problématique de données">Aucune problématique</option>
-          <option value="Données à migrer ou à nettoyer">Migration/nettoyage de données</option>
-          <option value="Connexion à des sources de données externes">Connexion à des sources externes</option>
-          <option value="Respect de la RGPD ou contraintes légales">Contraintes légales (RGPD, etc.)</option>
-        </select>
+        {/* Champs avancés */}
+        {showAdvancedFields && (
+          <>
+            <label className="block font-semibold mt-4 text-gray-700">📅 Date de démarrage</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+
+            <label className="block font-semibold mt-4 text-blue-700">🔄 Niveau d'intégration SI</label>
+            <select
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              value={integrationLevel}
+              onChange={(e) => setIntegrationLevel(e.target.value)}
+            >
+              <option value="">-- Sélectionner --</option>
+              <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
+              <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
+              <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
+            </select>
+
+            <label className="block font-semibold mt-4 text-purple-700">📊 Problématique de données</label>
+            <select
+              className="w-full p-2 border border-gray-300 rounded mb-4"
+              value={dataConcern}
+              onChange={(e) => setDataConcern(e.target.value)}
+            >
+              <option value="">-- Sélectionner --</option>
+              <option value="Aucune problématique de données">Aucune problématique</option>
+              <option value="Données à migrer ou à nettoyer">Migration/nettoyage de données</option>
+              <option value="Connexion à des sources de données externes">Connexion à des sources externes</option>
+              <option value="Respect de la RGPD ou contraintes légales">Contraintes légales (RGPD, etc.)</option>
+            </select>
+          </>
+        )}
 
         <button
           onClick={handleSubmit}

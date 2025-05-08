@@ -4,34 +4,24 @@ import type { NextRequest } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1 } = body
+    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '' } = body
+
+    // Détermine la date de départ à utiliser dans le prompt
+    const startDatePrompt = startDate
+      ? `Date de démarrage : ${new Date(startDate).toLocaleDateString('fr-FR')}`
+      : `Date de démarrage : aujourd'hui (${new Date().toLocaleDateString('fr-FR')})`
 
     const prompt = `
 Tu es un assistant produit.
-Voici une description de fonctionnalité : "${feature}"
 
-Ta mission :
-1. Découpe-la en 3 à 7 tâches techniques
-2. Estime pour chaque tâche une durée (en jours)
-3. Indique un niveau de confiance (faible, moyen, élevé)
-4. Calcule ensuite le temps total estimé (en jours)
+Voici la fonctionnalité décrite : "${feature}"
+Capacité équipe : ${capacity} développeur(s)
+Niveau d'intégration SI : ${integrationLevel}
+Problématique de données : ${dataConcern}
+${startDatePrompt}
 
-Enfin :
-5. Si l'équipe est composée de ${capacity} développeur(s) à 80% de capacité disponible,
-   calcule une **date de livraison réaliste**, à partir d'aujourd'hui (${new Date().toLocaleDateString('fr-FR')})
-   - Affiche la date de livraison au format "Livraison estimée : jj/mm/aaaa" sur une ligne séparée
-
-6. Ajoute une section "Calculs secondaires" (à afficher uniquement si l'utilisateur le souhaite) comprenant :
-   - L'effort total en homme-jours
-   - Une marge de sécurité (en % et en jours)
-   - Toute autre information utile pour un chef de projet
-
-Présente ta réponse en :
-- Un tableau clair
-- Un résumé avec : durée totale estimée + date de livraison
-- Une section "Calculs secondaires" bien séparée
-
-Sois synthétique mais structuré.
+Découpe la fonctionnalité en tâches techniques avec estimation.
+Puis calcule une date de livraison réaliste en tenant compte des contraintes ci-dessus.
 `
 
     // Appel à l'API OpenAI (exemple, à adapter avec ta clé et endpoint)
