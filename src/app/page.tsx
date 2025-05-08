@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Fragment } from "react"
 
 function extractTotalDays(response: string): number {
@@ -36,10 +36,51 @@ export default function Home() {
   const [tasks, setTasks] = useState<string[]>([])
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [isEditingTasks, setIsEditingTasks] = useState(false)
+  // Pour le scan du codebase
+  const [codebaseStructure, setCodebaseStructure] = useState<string[] | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
+  // Pour GitHub OAuth et vélocité
+  const [githubConnected, setGithubConnected] = useState(false)
+  const [githubVelocity, setGithubVelocity] = useState<{ avgPerWeek: number, avgDuration: number } | null>(null)
+  const [githubIssues, setGithubIssues] = useState<any[]>([])
+  // Gestion des erreurs utilisateur
+  const [error, setError] = useState<string | null>(null)
+  // Pour le choix du repo
+  const [githubOwner, setGithubOwner] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_OWNER || '')
+  const [githubRepo, setGithubRepo] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_REPO || '')
+  // Pour la gestion de la capacité de l'équipe
+  const [showCapacity, setShowCapacity] = useState(false)
+  const [team, setTeam] = useState<{ name: string, percent: number, comment: string }[]>([])
+  // Capacité totale calculée
+  const totalCapacity = team.reduce((sum, m) => sum + (Number(m.percent) || 0), 0)
+  // Feedback post-livraison
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackEstimation, setFeedbackEstimation] = useState("")
+  const [feedbackReal, setFeedbackReal] = useState("")
+  const [feedbackComment, setFeedbackComment] = useState("")
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
+  // Historique des feedbacks
+  const [feedbackHistory, setFeedbackHistory] = useState<any[]>([])
+
+  const handleScanCodebase = async () => {
+    setIsScanning(true)
+    setCodebaseStructure(null)
+    setError(null)
+    const res = await fetch('/api/scan-codebase')
+    const data = await res.json()
+    if (data.error) {
+      setError(data.error)
+      setIsScanning(false)
+      return
+    }
+    setCodebaseStructure(data.structure)
+    setIsScanning(false)
+  }
 
   const handleSubmit = async () => {
     setResult("Analyse en cours...")
     setShowAdvanced(false)
+    setError(null)
 
     // On envoie la liste validée des tâches à l'API d'estimation
     const response = await fetch("/api/estimate", {
@@ -52,9 +93,18 @@ export default function Home() {
         integrationLevel,
         startDate,
         tasks,
+        codebaseStructure,
+        githubVelocity,
+        team,
+        totalCapacity,
       })
     })
     const data = await response.json()
+    if (data.error) {
+      setError(data.error)
+      setResult("")
+      return
+    }
     setResult(data.output)
   }
 
@@ -96,6 +146,73 @@ export default function Home() {
 
   const deliveryDate = extractDeliveryDate(result)
   const advancedSection = extractAdvancedSection(result)
+
+  // Adaptation de la récupération des tickets selon le repo choisi
+  useEffect(() => {
+    if (!githubOwner || !githubRepo) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/github/issues?owner=${encodeURIComponent(githubOwner)}&repo=${encodeURIComponent(githubRepo)}`)
+        if (res.status === 200) {
+          setGithubConnected(true)
+          const data = await res.json()
+          setGithubIssues(data.tickets)
+          // Calcul vélocité simple
+          const closed = data.tickets.filter((i: any) => i.closed_at)
+          if (closed.length > 0) {
+            // Tickets fermés par semaine
+            const weeks: { [week: string]: number } = {}
+            let totalDuration = 0
+            closed.forEach((i: any) => {
+              const created = new Date(i.created_at)
+              const closedAt = new Date(i.closed_at)
+              const week = `${closedAt.getFullYear()}-W${Math.ceil((closedAt.getDate() + ((closedAt.getDay() + 6) % 7)) / 7)}`
+              weeks[week] = (weeks[week] || 0) + 1
+              totalDuration += (closedAt.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+            })
+            const avgPerWeek = Object.values(weeks).reduce((a, b) => a + b, 0) / Object.keys(weeks).length
+            const avgDuration = totalDuration / closed.length
+            setGithubVelocity({ avgPerWeek, avgDuration })
+          }
+        } else {
+          setGithubConnected(false)
+          const data = await res.json()
+          if (data.error) setError(data.error)
+        }
+      } catch {
+        setGithubConnected(false)
+        setError("Erreur lors de la connexion à GitHub.")
+      }
+    })()
+  }, [githubOwner, githubRepo])
+
+  const handleSendFeedback = async () => {
+    setFeedbackSuccess(false)
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estimation: feedbackEstimation, realDuration: feedbackReal, comment: feedbackComment })
+    })
+    const data = await res.json()
+    if (data.success) {
+      setFeedbackSuccess(true)
+      setShowFeedback(false)
+      setFeedbackEstimation("")
+      setFeedbackReal("")
+      setFeedbackComment("")
+    }
+  }
+
+  // Historique des feedbacks
+  useEffect(() => {
+    (async () => {
+      const res = await fetch('/api/feedback')
+      const data = await res.json()
+      if (data.feedbacks) {
+        setFeedbackHistory(data.feedbacks.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+      }
+    })()
+  }, [feedbackSuccess])
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-50">
@@ -194,6 +311,28 @@ export default function Home() {
           </>
         )}
 
+        {/* Scan du codebase */}
+        <div className="mb-6">
+          <button
+            className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900"
+            onClick={handleScanCodebase}
+            disabled={isScanning}
+          >
+            {isScanning ? "Scan en cours..." : "Analyse votre codebase existant"}
+          </button>
+          {codebaseStructure && (
+            <div className="mt-4 bg-gray-50 border border-gray-200 rounded p-4">
+              <div className="font-bold mb-2 text-gray-700">Structure du code détectée :</div>
+              <ul className="text-xs text-gray-800 max-h-40 overflow-auto">
+                {codebaseStructure.map((file, i) => (
+                  <li key={i}>{file}</li>
+                ))}
+              </ul>
+              <div className="mt-2 text-gray-500 italic text-xs">Bientôt : analyse avancée des routes, composants, dépendances…</div>
+            </div>
+          )}
+        </div>
+
         {/* Workflow suggestion/validation des tâches */}
         {!isEditingTasks && (
           <button
@@ -252,6 +391,96 @@ export default function Home() {
             >Valider ce découpage et estimer</button>
           </div>
         )}
+
+        {/* Connexion GitHub */}
+        <div className="mb-6">
+          {!githubConnected ? (
+            <button
+              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+              onClick={() => { window.location.href = '/api/github/oauth/start' }}
+            >
+              Connecter GitHub
+            </button>
+          ) : (
+            <div className="bg-green-50 border border-green-200 rounded p-4 mb-2">
+              <div className="font-bold text-green-800 mb-1">Connecté à GitHub ✅</div>
+              <div className="text-xs text-gray-700 mb-1">Repo analysé : <b>{githubOwner}/{githubRepo}</b></div>
+              {githubVelocity && (
+                <div className="text-green-900 text-sm">
+                  Vélocité moyenne : <b>{githubVelocity.avgPerWeek.toFixed(1)}</b> tickets/semaine<br />
+                  Durée moyenne de résolution : <b>{githubVelocity.avgDuration.toFixed(1)}</b> jours/ticket
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Affichage d'une erreur utilisateur sympa */}
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-300 text-red-800 rounded p-4 text-center font-semibold">
+            {error}
+          </div>
+        )}
+
+        {/* Sélection du repo GitHub */}
+        <div className="mb-4 flex gap-2 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-bold text-gray-700 mb-1">Organisation/Utilisateur GitHub</label>
+            <input
+              className="w-full p-2 border border-gray-300 rounded text-gray-900"
+              value={githubOwner}
+              onChange={e => setGithubOwner(e.target.value)}
+              placeholder="ex: mon-organisation"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-bold text-gray-700 mb-1">Nom du repo</label>
+            <input
+              className="w-full p-2 border border-gray-300 rounded text-gray-900"
+              value={githubRepo}
+              onChange={e => setGithubRepo(e.target.value)}
+              placeholder="ex: mon-repo"
+            />
+          </div>
+        </div>
+
+        {/* Capacité de l'équipe */}
+        <div className="mb-6">
+          <button
+            className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-900"
+            onClick={() => setShowCapacity(v => !v)}
+          >
+            {showCapacity ? "Masquer la capacité de l'équipe" : "Prendre en compte la capacité de l'équipe"}
+          </button>
+          {showCapacity && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded p-4">
+              <div className="font-bold mb-2 text-blue-800">Capacité de l'équipe</div>
+              <table className="w-full text-sm mb-2">
+                <thead>
+                  <tr>
+                    <th className="text-left">Nom</th>
+                    <th className="text-left">% temps</th>
+                    <th className="text-left">Commentaires</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {team.map((m, idx) => (
+                    <tr key={idx}>
+                      <td><input className="p-1 border rounded w-full" value={m.name} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, name: e.target.value } : m2))} placeholder="Nom" /></td>
+                      <td><input type="number" min={0} max={100} className="p-1 border rounded w-20" value={m.percent} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, percent: Number(e.target.value) } : m2))} placeholder="%" /></td>
+                      <td><input className="p-1 border rounded w-full" value={m.comment} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, comment: e.target.value } : m2))} placeholder="Commentaires, contraintes, indisponibilités..." /></td>
+                      <td><button className="text-red-600 font-bold" onClick={() => setTeam(t => t.filter((_, i) => i !== idx))}>✕</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button className="bg-gray-200 px-2 py-1 rounded text-gray-800 font-bold hover:bg-gray-300 mb-2" onClick={() => setTeam(t => [...t, { name: '', percent: 100, comment: '' }])}>+ Ajouter un membre</button>
+              <div className="mt-2 text-blue-900 font-semibold">Capacité totale : {totalCapacity}%</div>
+              <div className="text-xs text-gray-500 mt-1">(La capacité totale est la somme des % temps de chaque membre. Les commentaires permettent d'ajouter toute contrainte ou indisponibilité.)</div>
+            </div>
+          )}
+        </div>
       </section>
 
       {result && (
@@ -363,6 +592,73 @@ export default function Home() {
               )}
             </>
           )}
+
+          {/* Feedback post-livraison */}
+          <div className="mt-8">
+            {!showFeedback && (
+              <button
+                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+                onClick={() => {
+                  setShowFeedback(true)
+                  setFeedbackEstimation(extractTotalDays(result).toString())
+                }}
+              >
+                Saisir le feedback post-livraison
+              </button>
+            )}
+            {showFeedback && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mt-4">
+                <div className="mb-2 font-bold text-yellow-800">Feedback post-livraison</div>
+                <div className="mb-2">
+                  <label className="block text-sm font-bold mb-1">Estimation initiale (jours)</label>
+                  <input type="number" className="p-2 border rounded w-full" value={feedbackEstimation} onChange={e => setFeedbackEstimation(e.target.value)} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-bold mb-1">Durée réelle (jours)</label>
+                  <input type="number" className="p-2 border rounded w-full" value={feedbackReal} onChange={e => setFeedbackReal(e.target.value)} />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-bold mb-1">Commentaire</label>
+                  <textarea className="p-2 border rounded w-full" value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} rows={3} />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
+                  <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
+                </div>
+              </div>
+            )}
+            {feedbackSuccess && (
+              <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
+            )}
+          </div>
+
+          {/* Historique des feedbacks */}
+          <div className="mt-10">
+            <div className="font-bold text-gray-800 mb-2">Historique des feedbacks</div>
+            {feedbackHistory.length === 0 && <div className="text-gray-500 text-sm">Aucun feedback enregistré pour l'instant.</div>}
+            {feedbackHistory.length > 0 && (
+              <table className="w-full text-xs border border-gray-200 rounded">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="p-2 text-left">Date</th>
+                    <th className="p-2 text-left">Estimation (j)</th>
+                    <th className="p-2 text-left">Réel (j)</th>
+                    <th className="p-2 text-left">Commentaire</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedbackHistory.map((f, idx) => (
+                    <tr key={idx} className="border-t border-gray-100">
+                      <td className="p-2">{new Date(f.date).toLocaleDateString()}</td>
+                      <td className="p-2">{f.estimation}</td>
+                      <td className="p-2">{f.realDuration}</td>
+                      <td className="p-2">{f.comment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </section>
       )}
     </main>
