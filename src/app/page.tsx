@@ -64,11 +64,11 @@ export default function Home() {
           value={feature}
           onChange={(e) => setFeature(e.target.value)}
           placeholder="Décris ta fonctionnalité ici..."
-          className="w-full p-4 border border-gray-300 rounded mb-4"
+          className="w-full p-4 border border-gray-300 rounded mb-4 text-gray-900"
           rows={5}
         />
 
-        <label className="block font-semibold mb-2">👥 Nombre de développeurs</label>
+        <label className="block text-2xl font-bold mb-4 text-gray-800">👥 Nombre de développeurs</label>
         <div className="flex gap-2 mb-4">
           <input
             ref={capacityInputRef}
@@ -78,10 +78,10 @@ export default function Home() {
             value={capacity}
             onChange={(e) => setCapacity(Number(e.target.value))}
             placeholder="Nombre de développeurs"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded text-gray-900"
           />
           <button
-            className="bg-gray-200 px-3 rounded text-sm hover:bg-gray-300"
+            className="bg-gray-300 px-3 rounded text-sm font-bold text-gray-800 hover:bg-gray-400 border border-gray-400"
             onClick={() => {
               if (capacityInputRef.current) capacityInputRef.current.focus()
               handleSubmit()
@@ -103,17 +103,17 @@ export default function Home() {
         {/* Champs avancés */}
         {showAdvancedFields && (
           <>
-            <label className="block font-semibold mt-4 text-gray-700">📅 Date de démarrage</label>
+            <label className="block font-semibold mt-4 text-gray-900">📅 Date de démarrage</label>
             <input
               type="date"
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border border-gray-300 rounded mb-4 text-gray-900"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
 
             <label className="block font-semibold mt-4 text-blue-700">🔄 Niveau d'intégration SI</label>
             <select
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border border-gray-300 rounded mb-4 text-gray-900"
               value={integrationLevel}
               onChange={(e) => setIntegrationLevel(e.target.value)}
             >
@@ -125,7 +125,7 @@ export default function Home() {
 
             <label className="block font-semibold mt-4 text-purple-700">📊 Problématique de données</label>
             <select
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border border-gray-300 rounded mb-4 text-gray-900"
               value={dataConcern}
               onChange={(e) => setDataConcern(e.target.value)}
             >
@@ -158,7 +158,7 @@ export default function Home() {
 
           <div className="mb-4 border-b border-gray-200"></div>
 
-          <pre className="whitespace-pre-wrap text-gray-800">
+          <pre className="whitespace-pre-wrap text-gray-900">
             {result && result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/Calculs secondaires[\s\S]*/i, "")}
           </pre>
 
