@@ -163,77 +163,90 @@ export default function Home() {
         <section className="w-full max-w-2xl bg-white p-8 rounded-xl shadow mb-10 space-y-8">
           {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
           {(() => {
+            let dateLivraison: string | null = null;
             const dateMatches = Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi));
             if (dateMatches.length > 0) {
+              dateLivraison = dateMatches[0][1];
+            } else {
+              const altDate = result.match(/(?:soit|le|aux alentours du|autour du)\s*(\d{2}\/\d{2}\/\d{4})/i);
+              if (altDate) dateLivraison = altDate[1];
+            }
+            if (dateLivraison) {
               return (
                 <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
                   <span role="img" aria-label="date">📆</span>
                   <span>Livraison estimée :</span>
-                  <span className="underline decoration-green-400">{dateMatches[0][1]}</span>
+                  <span className="underline decoration-green-400">{dateLivraison}</span>
                 </div>
               );
             }
             return null;
           })()}
 
-          {/* Bloc Tâches techniques sous forme de tableau */}
+          {/* Bloc Tâches techniques sous forme de tableau, avec total déplacé ici */}
           <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-            <h2 className="text-2xl font-bold text-blue-800 mb-4">Tâches techniques</h2>
-            <table className="w-full text-left border-collapse">
+            <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
+            <table className="w-full text-left border-collapse mb-6">
               <thead>
                 <tr className="border-b border-blue-200">
-                  <th className="py-2 px-3 font-bold text-blue-800 text-lg">Tâche</th>
-                  <th className="py-2 px-3 font-bold text-blue-800 text-lg">Estimation</th>
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâche</th>
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
-                  const lines = (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/)))
-                    .map(l => l.replace(/\s+/g, ' ').trim())
-                    .filter(Boolean);
-                  return lines.map((l, idx) => {
-                    const match = l.match(/^(?:\d+\.\s*)?(.*?)(\(([^\)]*)\))?$/);
+                  const taskLines = (result.match(/\d+\.\s.*?\-\s*\d+\s*jours?/g) || []);
+                  let total = null;
+                  const totalMatch = result.match(/Total\s*:\s*(\d+\s*jours? de travail)/i) || result.match(/Estimation totale\s*:?-?\s*(\d+\s*jours? de travail)/i);
+                  if (totalMatch) total = totalMatch[1];
+                  return <>
+                    {taskLines.map((l, idx) => {
+                      const match = l.match(/^\d+\.\s*(.*?)\s*-\s*(\d+\s*jours?)/);
+                      return (
+                        <tr key={idx} className="border-b border-blue-100">
+                          <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
+                          <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
+                        </tr>
+                      );
+                    })}
+                  </>;
+                })()}
+                {(() => {
+                  const totalMatch = result.match(/Total\s*:\s*(\d+\s*jours? de travail)/i) || result.match(/Estimation totale\s*:?-?\s*(\d+\s*jours? de travail)/i);
+                  if (totalMatch) {
                     return (
-                      <tr key={idx} className="border-b border-blue-100">
-                        <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
-                        <td className="py-2 px-3 align-top font-bold text-blue-800">{match && match[3] ? match[3] : ''}</td>
+                      <tr>
+                        <td className="py-3 px-3 align-top text-right font-bold text-blue-900 text-lg" colSpan={2}>
+                          Estimation totale : <span className="text-pink-700">{totalMatch[1]}</span>
+                        </td>
                       </tr>
                     );
-                  });
+                  }
+                  return null;
                 })()}
               </tbody>
             </table>
           </div>
 
-          {/* Bloc Résumé (jusqu'à 'Estimation totale') */}
+          {/* Bloc Résumé (anciennement Conclusion, sans Tâches Techniques, plus aéré) */}
           {(() => {
-            const summary = result
+            let resume = result
               .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
+              .replace(/\d+\.\s.*?\-\s*\d+\s*jours?/g, "")
               .replace(/\|.*\|/g, "")
               .replace(/Calculs secondaires[\s\S]*/i, "")
-              .split(/Estimation totale ?:/i)[0]
-              .replace(/[\n\r]{2,}/g, '\n')
+              .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
+              .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
+              .replace(/[\n\r]{2,}/g, '\n\n')
               .trim();
-            return summary ? (
-              <div className="bg-gray-100 p-6 rounded-xl border border-gray-200">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Résumé</h3>
-                <div className="text-gray-900 whitespace-pre-line">{summary}</div>
+            const split = resume.split(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i);
+            resume = split.length > 1 ? split[1].trim() : resume;
+            return resume ? (
+              <div className="bg-gray-100 p-10 rounded-xl border border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-6">Résumé</h3>
+                <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6">{resume}</div>
               </div>
             ) : null;
-          })()}
-
-          {/* Bloc Conclusion à partir de 'Estimation totale' */}
-          {(() => {
-            const conclusion = result.split(/Estimation totale ?:/i)[1];
-            if (!conclusion) return null;
-            // Met en gras et couleur la période estimée (ex: "15 jours de travail.")
-            const highlighted = conclusion.replace(/(\d+\s*jours? de travail\.?)/i, '<span class="font-bold text-pink-700">$1</span>');
-            return (
-              <div className="bg-pink-50 p-6 rounded-xl border border-pink-200">
-                <h3 className="text-xl font-bold text-pink-700 mb-2">Conclusion</h3>
-                <div className="text-gray-900 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: highlighted }} />
-              </div>
-            );
           })()}
 
           {advancedSection && (
