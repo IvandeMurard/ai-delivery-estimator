@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from "react"
+import { Fragment } from "react"
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -30,11 +31,17 @@ export default function Home() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showAdvancedFields, setShowAdvancedFields] = useState(false)
   const capacityInputRef = useRef<HTMLInputElement>(null)
+  // Pour le workflow de suggestion/validation des tâches
+  const [suggestedTasks, setSuggestedTasks] = useState<string[] | null>(null)
+  const [tasks, setTasks] = useState<string[]>([])
+  const [isSuggesting, setIsSuggesting] = useState(false)
+  const [isEditingTasks, setIsEditingTasks] = useState(false)
 
   const handleSubmit = async () => {
     setResult("Analyse en cours...")
     setShowAdvanced(false)
 
+    // On envoie la liste validée des tâches à l'API d'estimation
     const response = await fetch("/api/estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,11 +51,47 @@ export default function Home() {
         dataConcern,
         integrationLevel,
         startDate,
+        tasks,
       })
     })
-
     const data = await response.json()
     setResult(data.output)
+  }
+
+  // Suggestion de tâches via API
+  const handleSuggestTasks = async () => {
+    setIsSuggesting(true)
+    setSuggestedTasks(null)
+    setIsEditingTasks(false)
+    const response = await fetch("/api/suggest-tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feature })
+    })
+    const data = await response.json()
+    setSuggestedTasks(data.tasks)
+    setTasks(data.tasks)
+    setIsSuggesting(false)
+    setIsEditingTasks(true)
+  }
+
+  // Edition des tâches (ajout, suppression, édition inline, drag & drop simple)
+  const handleTaskChange = (idx: number, value: string) => {
+    setTasks(tasks => tasks.map((t, i) => i === idx ? value : t))
+  }
+  const handleTaskDelete = (idx: number) => {
+    setTasks(tasks => tasks.filter((_, i) => i !== idx))
+  }
+  const handleTaskAdd = () => {
+    setTasks(tasks => [...tasks, ""])
+  }
+  const handleTaskMove = (from: number, to: number) => {
+    setTasks(tasks => {
+      const copy = [...tasks]
+      const [moved] = copy.splice(from, 1)
+      copy.splice(to, 0, moved)
+      return copy
+    })
   }
 
   const deliveryDate = extractDeliveryDate(result)
@@ -151,12 +194,64 @@ export default function Home() {
           </>
         )}
 
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
-        >
-          Estimer
-        </button>
+        {/* Workflow suggestion/validation des tâches */}
+        {!isEditingTasks && (
+          <button
+            onClick={handleSuggestTasks}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
+            disabled={isSuggesting || !feature.trim()}
+          >
+            {isSuggesting ? "Découpage en cours..." : "Découper en tâches"}
+          </button>
+        )}
+        {/* Affichage et édition des tâches */}
+        {isEditingTasks && (
+          <div className="mt-6">
+            <h3 className="text-lg font-bold mb-2 text-blue-800">Découpage proposé</h3>
+            <ul className="mb-4">
+              {tasks.map((task, idx) => (
+                <li key={idx} className="flex items-center gap-2 mb-2">
+                  <span className="text-gray-500 select-none cursor-move"
+                    title="Glisser pour réordonner"
+                    draggable
+                    onDragStart={e => e.dataTransfer.setData('text/plain', idx.toString())}
+                    onDrop={e => {
+                      e.preventDefault();
+                      const from = Number(e.dataTransfer.getData('text/plain'));
+                      handleTaskMove(from, idx);
+                    }}
+                    onDragOver={e => e.preventDefault()}
+                  >☰</span>
+                  <input
+                    className="flex-1 p-2 border border-gray-300 rounded text-gray-900"
+                    value={task}
+                    onChange={e => handleTaskChange(idx, e.target.value)}
+                  />
+                  <button
+                    className="ml-2 text-red-600 hover:text-red-800 font-bold"
+                    onClick={() => handleTaskDelete(idx)}
+                    title="Supprimer cette tâche"
+                  >✕</button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2 mb-4">
+              <button
+                className="bg-gray-200 px-3 py-1 rounded text-gray-800 font-bold hover:bg-gray-300"
+                onClick={handleTaskAdd}
+              >+ Ajouter une tâche</button>
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                onClick={() => setIsEditingTasks(false)}
+              >Modifier la description</button>
+            </div>
+            <button
+              className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 w-full"
+              onClick={handleSubmit}
+              disabled={tasks.length === 0 || tasks.some(t => !t.trim())}
+            >Valider ce découpage et estimer</button>
+          </div>
+        )}
       </section>
 
       {result && (

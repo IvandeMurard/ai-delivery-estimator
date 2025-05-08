@@ -34,7 +34,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       body: JSON.stringify({
         model: 'gpt-4',
         messages: [
-          { role: 'system', content: "Tu es un assistant en estimation produit." },
+          { role: 'system', content: "Tu es product manager et tu estime les délais de livraison des fonctionnalités." },
           { role: 'user', content: prompt },
         ],
         temperature: 0.5,
