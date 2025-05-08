@@ -25,7 +25,7 @@ export default function Home() {
   const [result, setResult] = useState("")
   const [capacity, setCapacity] = useState(1)
   const [integrationLevel, setIntegrationLevel] = useState("")
-  const [dataConcern, setDataConcern] = useState("")
+  const [dataConcern, setDataConcern] = useState<string[]>([])
   const [startDate, setStartDate] = useState("")
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showAdvancedFields, setShowAdvancedFields] = useState(false)
@@ -124,17 +124,30 @@ export default function Home() {
             </select>
 
             <label className="block font-semibold mt-4 text-purple-700">📊 Problématique de données</label>
-            <select
-              className="w-full p-2 border border-gray-300 rounded mb-4 text-gray-900"
-              value={dataConcern}
-              onChange={(e) => setDataConcern(e.target.value)}
-            >
-              <option value="">-- Sélectionner --</option>
-              <option value="Aucune problématique de données">Aucune problématique</option>
-              <option value="Données à migrer ou à nettoyer">Migration/nettoyage de données</option>
-              <option value="Connexion à des sources de données externes">Connexion à des sources externes</option>
-              <option value="Respect de la RGPD ou contraintes légales">Contraintes légales (RGPD, etc.)</option>
-            </select>
+            <div className="mb-4 flex flex-col gap-2">
+              {[
+                "Aucune problématique de données",
+                "Données à migrer ou à nettoyer",
+                "Connexion à des sources de données externes",
+                "Respect de la RGPD ou contraintes légales"
+              ].map(option => (
+                <label key={option} className="flex items-center gap-2 text-gray-900">
+                  <input
+                    type="checkbox"
+                    value={option}
+                    checked={dataConcern.includes(option)}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setDataConcern([...dataConcern, option])
+                      } else {
+                        setDataConcern(dataConcern.filter(v => v !== option))
+                      }
+                    }}
+                  />
+                  {option}
+                </label>
+              ))}
+            </div>
           </>
         )}
 
@@ -148,18 +161,28 @@ export default function Home() {
 
       {result && (
         <section className="w-full max-w-xl bg-white p-6 rounded shadow mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">Résumé de l'estimation</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Résumé de l'estimation</h2>
 
           {deliveryDate && (
-            <div className="text-lg font-semibold text-green-700 mb-4">
-              📆 Livraison estimée : {deliveryDate}
+            <div className="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">
+              <span role="img" aria-label="date">📆</span>
+              <span>Livraison estimée :</span>
+              <span className="underline decoration-green-400">{deliveryDate}</span>
             </div>
           )}
 
           <div className="mb-4 border-b border-gray-200"></div>
 
+          {/* Bloc découpage technique (extraction simple par regex ou heuristique) */}
+          <h3 className="text-lg font-bold text-blue-700 mt-4 mb-2">Découpage technique</h3>
+          <pre className="whitespace-pre-wrap text-gray-900 bg-blue-50 p-3 rounded border border-blue-100 mb-4">
+            {result && result.match(/\|.*\|/g) ? result.match(/\|.*\|/g)?.join('\n') : result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/Calculs secondaires[\s\S]*/i, "")}
+          </pre>
+
+          {/* Bloc résumé (reste du texte hors découpage et calculs secondaires) */}
+          <h3 className="text-lg font-bold text-gray-800 mt-4 mb-2">Résumé</h3>
           <pre className="whitespace-pre-wrap text-gray-900">
-            {result && result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/Calculs secondaires[\s\S]*/i, "")}
+            {result && result.replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/i, "").replace(/\|.*\|/g, "").replace(/Calculs secondaires[\s\S]*/i, "")}
           </pre>
 
           {advancedSection && (
