@@ -160,50 +160,80 @@ export default function Home() {
       </section>
 
       {result && (
-        <section className="w-full max-w-xl bg-white p-6 rounded shadow mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Découpage technique</h2>
+        <section className="w-full max-w-2xl bg-white p-8 rounded-xl shadow mb-10 space-y-8">
+          {/* Bloc vert date de livraison */}
+          {(() => {
+            const dateMatch = result.match(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
+            return dateMatch ? (
+              <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
+                <span role="img" aria-label="date">📆</span>
+                <span>Livraison estimée :</span>
+                <span className="underline decoration-green-400">{dateMatch[1]}</span>
+              </div>
+            ) : null;
+          })()}
 
-          {/* Extraction et mise en valeur des dates de livraison */}
-          {result && Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi)).map((m, i) => (
-            <div key={i} className="text-2xl font-extrabold text-green-800 mb-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-3 justify-center">
-              <span role="img" aria-label="date">📆</span>
-              <span>Livraison estimée :</span>
-              <span className="underline decoration-green-400">{m[1]}</span>
-            </div>
-          ))}
-
-          {/* Bloc découpage technique : chaque point sur une seule ligne */}
-          <div className="bg-blue-50 p-3 rounded border border-blue-100 mb-4">
-            {(() => {
-              // Extraction des lignes du tableau Markdown ou des points techniques
-              const lines = (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/)))
-                .map(l => l.replace(/\s+/g, ' ').trim())
-                .filter(Boolean);
-              return (
-                <ul className="list-decimal pl-6">
-                  {lines.map((l, idx) => (
-                    <li key={idx} className="whitespace-nowrap overflow-x-auto text-gray-900">{l}</li>
-                  ))}
-                </ul>
-              );
-            })()}
+          {/* Bloc Tâches techniques sous forme de tableau */}
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+            <h2 className="text-2xl font-bold text-blue-800 mb-4">Tâches techniques</h2>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-blue-200">
+                  <th className="py-2 px-3 font-semibold">Tâche</th>
+                  <th className="py-2 px-3 font-semibold">Estimation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  // Extraction des lignes du tableau Markdown ou des points techniques
+                  const lines = (result.match(/\|.*\|/g) || result.split(/\n|\r/).filter(l => l.match(/^[\d\-•\*]/)))
+                    .map(l => l.replace(/\s+/g, ' ').trim())
+                    .filter(Boolean);
+                  // Extraction tâche/estimation
+                  return lines.map((l, idx) => {
+                    // Essaye de séparer la tâche de l'estimation (ex: "1. Tâche (2 jours)")
+                    const match = l.match(/^(?:\d+\.\s*)?(.*?)(\(([^\)]*)\))?$/);
+                    return (
+                      <tr key={idx} className="border-b border-blue-100">
+                        <td className="py-2 px-3 align-top">{match ? match[1].trim() : l}</td>
+                        <td className="py-2 px-3 align-top text-blue-700 font-semibold">{match && match[3] ? match[3] : ''}</td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
           </div>
 
-          {/* Bloc résumé extrait du texte (hors tableau et calculs secondaires) */}
+          {/* Bloc Résumé (jusqu'à 'Estimation totale') */}
           {(() => {
-            // Extraction du résumé (hors tableau et calculs secondaires)
             const summary = result
               .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
               .replace(/\|.*\|/g, "")
               .replace(/Calculs secondaires[\s\S]*/i, "")
+              .split(/Estimation totale ?:/i)[0]
               .replace(/[\n\r]{2,}/g, '\n')
               .trim();
             return summary ? (
-              <div className="bg-gray-100 p-4 rounded border border-gray-200 mb-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">Résumé</h3>
+              <div className="bg-gray-100 p-6 rounded-xl border border-gray-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Résumé</h3>
                 <div className="text-gray-900 whitespace-pre-line">{summary}</div>
               </div>
             ) : null;
+          })()}
+
+          {/* Bloc Conclusion à partir de 'Estimation totale' */}
+          {(() => {
+            const conclusion = result.split(/Estimation totale ?:/i)[1];
+            if (!conclusion) return null;
+            // Met en gras et couleur la période estimée (ex: "15 jours de travail.")
+            const highlighted = conclusion.replace(/(\d+\s*jours? de travail\.?)/i, '<span class="font-bold text-pink-700">$1</span>');
+            return (
+              <div className="bg-pink-50 p-6 rounded-xl border border-pink-200">
+                <h3 className="text-xl font-bold text-pink-700 mb-2">Conclusion</h3>
+                <div className="text-gray-900 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: highlighted }} />
+              </div>
+            );
           })()}
 
           {advancedSection && (
