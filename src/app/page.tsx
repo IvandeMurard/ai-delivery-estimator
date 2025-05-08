@@ -518,62 +518,64 @@ export default function Home() {
                 <table className="w-full text-left border-collapse mb-6">
                   <thead>
                     <tr className="border-b border-blue-200">
-                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâche</th>
+                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
                       <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(() => {
-                      const taskLines = (result.match(/\d+\.\s.*?\-\s*\d+\s*jours?/g) || []);
-                      let total = null;
-                      const totalMatch = result.match(/Total\s*:\s*(\d+\s*jours? de travail)/i) || result.match(/Estimation totale\s*:?-?\s*(\d+\s*jours? de travail)/i);
-                      if (totalMatch) total = totalMatch[1];
-                      return <>
-                        {taskLines.map((l, idx) => {
-                          const match = l.match(/^\d+\.\s*(.*?)\s*-\s*(\d+\s*jours?)/);
-                          return (
-                            <tr key={idx} className="border-b border-blue-100">
-                              <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
-                              <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
-                            </tr>
-                          );
-                        })}
-                      </>;
-                    })()}
-                    {(() => {
-                      const totalMatch = result.match(/Total\s*:\s*(\d+\s*jours? de travail)/i) || result.match(/Estimation totale\s*:?-?\s*(\d+\s*jours? de travail)/i);
-                      if (totalMatch) {
+                      // Extraction améliorée des tâches et estimations depuis le texte
+                      // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
+                      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
+                      return taskLines.map((l, idx) => {
+                        // Ex: "1. Analyse ... : 3 jours"
+                        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
                         return (
-                          <tr>
-                            <td className="py-3 px-3 align-top text-right font-bold text-blue-900 text-lg" colSpan={2}>
-                              Estimation totale : <span className="text-pink-700">{totalMatch[1]}</span>
-                            </td>
+                          <tr key={idx} className="border-b border-blue-100">
+                            <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
+                            <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
                           </tr>
                         );
-                      }
-                      return null;
+                      });
                     })()}
                   </tbody>
                 </table>
+                {/* Total estimé en gras */}
+                {(() => {
+                  // Cherche le total dans le texte
+                  const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
+                  if (totalMatch) {
+                    return (
+                      <div className="text-right text-lg font-bold text-blue-900 mt-2">
+                        Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Bloc Résumé (anciennement Conclusion, sans Tâches Techniques, plus aéré) */}
               {(() => {
+                // Retire la partie Tâches Techniques du résumé
                 let resume = result
                   .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
-                  .replace(/\d+\.\s.*?\-\s*\d+\s*jours?/g, "")
+                  .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
+                  .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
                   .replace(/\|.*\|/g, "")
                   .replace(/Calculs secondaires[\s\S]*/i, "")
                   .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
                   .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
                   .replace(/[\n\r]{2,}/g, '\n\n')
                   .trim();
-                const split = resume.split(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i);
-                resume = split.length > 1 ? split[1].trim() : resume;
+                // Met en gras les dates (jj/mm/aaaa)
+                resume = resume.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
+                // Met en gras le total de jours estimés (ex: "11 jours", "13 jours")
+                resume = resume.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
                 return resume ? (
                   <div className="bg-gray-100 p-10 rounded-xl border border-gray-200">
                     <h3 className="text-xl font-bold text-gray-800 mb-6">Résumé</h3>
-                    <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6">{resume}</div>
+                    <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
                   </div>
                 ) : null;
               })()}
