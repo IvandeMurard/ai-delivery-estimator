@@ -126,6 +126,12 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Pour garantir le même affichage après estimation depuis n'importe quel bouton
+  const handleValidateAndEstimate = () => {
+    handleSubmit();
+    setIsEditingTasks(false);
+  };
+
   // Suggestion de tâches via API
   const handleSuggestTasks = async () => {
     setIsSuggesting(true)
@@ -337,7 +343,7 @@ export default function Home() {
                 </div>
                 <button
                   type="button"
-                  onClick={handleSubmit}
+                  onClick={handleValidateAndEstimate}
                   className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
                   disabled={tasks.length === 0 || tasks.some(t => !t.trim())}
                 >Valider ce découpage et estimer</button>
