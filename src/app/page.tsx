@@ -341,12 +341,6 @@ export default function Home() {
                     onClick={() => setIsEditingTasks(false)}
                   >Modifier la description</button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleValidateAndEstimate}
-                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
-                  disabled={tasks.length === 0 || tasks.some(t => !t.trim())}
-                >Valider ce découpage et estimer</button>
               </div>
             )}
           </div>
