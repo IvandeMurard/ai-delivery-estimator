@@ -5,6 +5,11 @@ import { Fragment } from "react"
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { EstimationPDF } from './components/EstimationPDF'
 import { ConclusionPDF } from './components/ConclusionPDF'
+import Loader from './components/Loader'
+import ColumnsWrapper from './components/ColumnsWrapper'
+import Section from './components/Section'
+import StatusMessage from './components/StatusMessage'
+import { fetchWithTimeout } from './lib/fetchWithTimeout'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -70,6 +75,13 @@ export default function Home() {
   const [notionConnected, setNotionConnected] = useState(false)
   const [notionDatabaseId, setNotionDatabaseId] = useState("")
   const [isExporting, setIsExporting] = useState(false)
+  // Ajout de l'état global statusMessage
+  const [statusMessage, setStatusMessage] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null)
 
   useEffect(() => {
     const onScroll = () => {
@@ -83,47 +95,69 @@ export default function Home() {
     setIsScanning(true)
     setCodebaseStructure(null)
     setError(null)
-    const res = await fetch('/api/scan-codebase')
-    const data = await res.json()
-    if (data.error) {
-      setError(data.error)
+    try {
+      const res = await fetchWithTimeout('/api/scan-codebase', 15000)
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+        setIsScanning(false)
+        return
+      }
+      setCodebaseStructure(data.structure)
       setIsScanning(false)
-      return
+    } catch (err: any) {
+      setError(err.message)
+      setIsScanning(false)
     }
-    setCodebaseStructure(data.structure)
-    setIsScanning(false)
   }
 
   const handleSubmit = async () => {
     setResult("Analyse en cours...")
     setShowAdvanced(false)
     setError(null)
+    setStatusMessage(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-
-    // On envoie la liste validée des tâches à l'API d'estimation
-    const response = await fetch("/api/estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        feature,
-        capacity,
-        dataConcern,
-        integrationLevel,
-        startDate,
-        tasks,
-        codebaseStructure,
-        githubVelocity,
-        team,
-        totalCapacity,
-      })
-    })
-    const data = await response.json()
-    if (data.error) {
-      setError(data.error)
+    try {
+      const response = await fetchWithTimeout("/api/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature,
+          capacity,
+          dataConcern,
+          integrationLevel,
+          startDate,
+          tasks,
+          codebaseStructure,
+          githubVelocity,
+          team,
+          totalCapacity,
+        })
+      }, 15000)
+      const data = await response.json()
+      if (data.error) {
+        setError(data.error)
+        setResult("")
+        setStatusMessage({
+          type: 'error',
+          message: "Une erreur est survenue lors de l'analyse.",
+          actionLabel: 'Relancer l'analyse',
+          onAction: handleSubmit
+        })
+        return
+      }
+      setResult(data.output)
+      setStatusMessage({ type: 'success', message: "Estimation complétée avec succès ✅" })
+    } catch (err: any) {
+      setError(err.message)
       setResult("")
-      return
+      setStatusMessage({
+        type: 'error',
+        message: err.message === 'timeout' ? "Le serveur met trop de temps à répondre. Veuillez réessayer." : "Une erreur est survenue lors de l'analyse.",
+        actionLabel: 'Relancer l'analyse',
+        onAction: handleSubmit
+      })
     }
-    setResult(data.output)
   }
 
   // Pour garantir le même affichage après estimation depuis n'importe quel bouton
@@ -137,16 +171,21 @@ export default function Home() {
     setIsSuggesting(true)
     setSuggestedTasks(null)
     setIsEditingTasks(false)
-    const response = await fetch("/api/suggest-tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ feature })
-    })
-    const data = await response.json()
-    setSuggestedTasks(data.tasks)
-    setTasks(data.tasks)
-    setIsSuggesting(false)
-    setIsEditingTasks(true)
+    try {
+      const response = await fetchWithTimeout("/api/suggest-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feature })
+      }, 15000)
+      const data = await response.json()
+      setSuggestedTasks(data.tasks)
+      setTasks(data.tasks)
+      setIsSuggesting(false)
+      setIsEditingTasks(true)
+    } catch (err: any) {
+      setError(err.message)
+      setIsSuggesting(false)
+    }
   }
 
   // Edition des tâches (ajout, suppression, édition inline, drag & drop simple)
@@ -176,7 +215,7 @@ export default function Home() {
     if (!githubOwner || !githubRepo) return;
     (async () => {
       try {
-        const res = await fetch(`/api/github/issues?owner=${encodeURIComponent(githubOwner)}&repo=${encodeURIComponent(githubRepo)}`)
+        const res = await fetchWithTimeout(`/api/github/issues?owner=${encodeURIComponent(githubOwner)}&repo=${encodeURIComponent(githubRepo)}`, 15000)
         if (res.status === 200) {
           setGithubConnected(true)
           const data = await res.json()
@@ -212,11 +251,11 @@ export default function Home() {
 
   const handleSendFeedback = async () => {
     setFeedbackSuccess(false)
-    const res = await fetch('/api/feedback', {
+    const res = await fetchWithTimeout('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ estimation: feedbackEstimation, realDuration: feedbackReal, comment: feedbackComment })
-    })
+    }, 15000)
     const data = await res.json()
     if (data.success) {
       setFeedbackSuccess(true)
@@ -230,7 +269,7 @@ export default function Home() {
   // Historique des feedbacks
   useEffect(() => {
     (async () => {
-      const res = await fetch('/api/feedback')
+      const res = await fetchWithTimeout('/api/feedback', 15000)
       const data = await res.json()
       if (data.feedbacks) {
         setFeedbackHistory(data.feedbacks.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()))
@@ -245,8 +284,9 @@ export default function Home() {
   const handleExportToNotion = async () => {
     if (!notionConnected) return
     setIsExporting(true)
+    setStatusMessage(null)
     try {
-      const response = await fetch('/api/notion/export', {
+      const response = await fetchWithTimeout('/api/notion/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -256,324 +296,373 @@ export default function Home() {
           startDate,
           databaseId: notionDatabaseId
         })
-      })
+      }, 15000)
       const data = await response.json()
       if (data.error) {
         setError(data.error)
+        setStatusMessage({ type: 'error', message: "Erreur lors de l'export vers Notion." })
       } else {
+        setStatusMessage({ type: 'success', message: "Estimation exportée vers Notion avec succès." })
         alert('Estimation exportée vers Notion avec succès !')
       }
     } catch (err) {
       setError('Erreur lors de l\'export vers Notion')
+      setStatusMessage({ type: 'error', message: "Erreur lors de l'export vers Notion." })
     }
     setIsExporting(false)
   }
+
+  // Fonction de reset global
+  const handleReset = () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir tout réinitialiser ?')) return;
+    setFeature("");
+    setResult("");
+    setCapacity(1);
+    setIntegrationLevel("");
+    setDataConcern([]);
+    setStartDate("");
+    setShowAdvanced(false);
+    setShowAdvancedFields(false);
+    setSuggestedTasks(null);
+    setTasks([]);
+    setIsSuggesting(false);
+    setIsEditingTasks(false);
+    setCodebaseStructure(null);
+    setIsScanning(false);
+    setGithubConnected(false);
+    setGithubVelocity(null);
+    setGithubIssues([]);
+    setGithubOwner(process.env.NEXT_PUBLIC_GITHUB_OWNER || '');
+    setGithubRepo(process.env.NEXT_PUBLIC_GITHUB_REPO || '');
+    setShowCapacity(false);
+    setTeam([]);
+    setShowFeedback(false);
+    setFeedbackEstimation("");
+    setFeedbackReal("");
+    setFeedbackComment("");
+    setFeedbackSuccess(false);
+    setFeedbackHistory([]);
+    setNotionConnected(false);
+    setNotionDatabaseId("");
+    setIsExporting(false);
+    setError(null);
+    setStatusMessage({ type: 'info', message: 'Formulaire réinitialisé.' });
+  };
 
   return (
     <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
-      <div className="w-full px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12 overflow-x-auto">
-        {/* Bloc 1 : Saisie & contexte */}
-        <section className="bg-white p-8 rounded-xl shadow border border-blue-100 flex flex-col gap-6 col-span-1 min-w-[350px] flex-1">
-          <h2 className="text-2xl font-bold mb-4 text-blue-800">Saisie & contexte</h2>
-          {/* Etape 1 : Découpage en tâches techniques */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">1</span>
-              <span className="text-lg font-bold text-blue-900">Découper la fonctionnalité en tâches techniques</span>
-            </div>
-            <textarea
-              value={feature}
-              onChange={(e) => setFeature(e.target.value)}
-              placeholder="Décris ta fonctionnalité ici..."
-              className="w-full p-4 border border-gray-300 rounded mb-2 text-gray-900"
-              rows={4}
-            />
-            {/* Workflow suggestion/validation des tâches */}
-            {!isEditingTasks && (
-              <button
-                onClick={handleSuggestTasks}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full mt-2"
-                disabled={isSuggesting || !feature.trim()}
-              >
-                {isSuggesting ? "Découpage en cours..." : "Découper en tâches"}
-              </button>
-            )}
-            {/* Affichage et édition des tâches */}
-            {isEditingTasks && (
-              <div className="mt-4">
-                <h3 className="text-lg font-bold mb-2 text-blue-800">Découpage proposé</h3>
-                <ul className="mb-4">
-                  {tasks.map((task, idx) => (
-                    <li key={idx} className="flex items-center gap-2 mb-2">
-                      <span className="text-gray-500 select-none cursor-move"
-                        title="Glisser pour réordonner"
-                        draggable
-                        onDragStart={e => e.dataTransfer.setData('text/plain', idx.toString())}
-                        onDrop={e => {
-                          e.preventDefault();
-                          const from = Number(e.dataTransfer.getData('text/plain'));
-                          handleTaskMove(from, idx);
-                        }}
-                        onDragOver={e => e.preventDefault()}
-                      >☰</span>
-                      <input
-                        className="flex-1 p-2 border border-gray-300 rounded text-gray-900"
-                        value={task}
-                        onChange={e => handleTaskChange(idx, e.target.value)}
-                      />
-                      <button
-                        className="ml-2 text-red-600 hover:text-red-800 font-bold"
-                        onClick={() => handleTaskDelete(idx)}
-                        title="Supprimer cette tâche"
-                      >✕</button>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex gap-2 mb-4">
-                  <button
-                    className="bg-gray-200 px-3 py-1 rounded text-gray-800 font-bold hover:bg-gray-300"
-                    onClick={handleTaskAdd}
-                  >+ Ajouter une tâche</button>
-                  <button
-                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-                    onClick={() => setIsEditingTasks(false)}
-                  >Modifier la description</button>
-                </div>
+      <ColumnsWrapper>
+        <Section id="saisie-contexte" title="Saisie & contexte">
+          {/* Bloc 1 : Saisie & contexte */}
+          <div className="w-full px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12 overflow-x-auto">
+            {/* Etape 1 : Découpage en tâches techniques */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">1</span>
+                <span className="text-lg font-bold text-blue-900">Découper la fonctionnalité en tâches techniques</span>
               </div>
-            )}
-          </div>
-          {/* Etape 2 : Date de démarrage */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">2</span>
-              <span className="text-lg font-bold text-blue-900">Date de démarrage</span>
-            </div>
-            <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
-            <input
-              type="date"
-              className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          {/* Etape 3 : Champs avancés (facultatif) */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
-              <span className="text-lg font-bold text-blue-900">Champs avancés <span className="text-xs text-blue-500">(facultatif)</span></span>
-            </div>
-            <button
-              type="button"
-              className="mb-2 text-blue-600 underline text-sm"
-              onClick={() => setShowAdvancedFields((v) => !v)}
-            >
-              {showAdvancedFields ? "Masquer les champs avancés" : "Afficher les champs avancés"}
-            </button>
-            {showAdvancedFields && (
-              <>
-                <label className="block font-semibold mt-2 text-blue-700">🔄 Niveau d'intégration SI</label>
-                <select
-                  className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
-                  value={integrationLevel}
-                  onChange={(e) => setIntegrationLevel(e.target.value)}
-                >
-                  <option value="">-- Sélectionner --</option>
-                  <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
-                  <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
-                  <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
-                </select>
-                <label className="block font-semibold mt-2 text-purple-700">📊 Problématique de données</label>
-                <div className="mb-2 flex flex-col gap-2">
-                  {[
-                    "Aucune problématique de données",
-                    "Données à migrer ou à nettoyer",
-                    "Connexion à des sources de données externes",
-                    "Respect de la RGPD ou contraintes légales"
-                  ].map(option => (
-                    <label key={option} className="flex items-center gap-2 text-gray-900">
-                      <input
-                        type="checkbox"
-                        value={option}
-                        checked={dataConcern.includes(option)}
-                        onChange={e => {
-                          if (e.target.checked) {
-                            setDataConcern([...dataConcern, option])
-                          } else {
-                            setDataConcern(dataConcern.filter(v => v !== option))
-                          }
-                        }}
-                      />
-                      {option}
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          {/* Etape 4 : Connexion GitHub (facultatif) */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
-              <span className="text-lg font-bold text-blue-900">Connexion GitHub <span className='text-xs text-blue-500'>(facultatif)</span></span>
-            </div>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-700 mb-1">Organisation/Utilisateur</label>
-                <input
-                  className="w-full p-2 border border-gray-300 rounded text-gray-900"
-                  value={githubOwner}
-                  onChange={e => setGithubOwner(e.target.value)}
-                  placeholder="ex: mon-organisation"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-700 mb-1">Nom du repo</label>
-                <input
-                  className="w-full p-2 border border-gray-300 rounded text-gray-900"
-                  value={githubRepo}
-                  onChange={e => setGithubRepo(e.target.value)}
-                  placeholder="ex: mon-repo"
-                />
-              </div>
-            </div>
-            <div className="mt-2">
-              {!githubConnected ? (
+              <textarea
+                value={feature}
+                onChange={(e) => setFeature(e.target.value)}
+                placeholder="Décris ta fonctionnalité ici..."
+                className="w-full p-4 border border-gray-300 rounded mb-2 text-gray-900"
+                rows={4}
+              />
+              {/* Workflow suggestion/validation des tâches */}
+              {!isEditingTasks && (
                 <button
-                  className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-                  onClick={() => { window.location.href = '/api/github/oauth/start' }}
+                  onClick={handleSuggestTasks}
+                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full mt-2"
+                  disabled={isSuggesting || !feature.trim()}
                 >
-                  Connecter GitHub
+                  {isSuggesting ? "Découpage en cours..." : "Découper en tâches"}
                 </button>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
-                  <span className="font-bold text-green-800">Connecté à GitHub ✅</span>
-                  <span className="text-xs text-gray-700 ml-2">Repo analysé : <b>{githubOwner}/{githubRepo}</b></span>
-                  {githubVelocity && (
-                    <span className="ml-2 text-green-900 text-xs">Vélocité : <b>{githubVelocity.avgPerWeek.toFixed(1)}</b> tickets/semaine, <b>{githubVelocity.avgDuration.toFixed(1)}</b> jours/ticket</span>
-                  )}
-                </div>
               )}
-            </div>
-          </div>
-          {/* Etape 5 : Connexion Notion (facultatif) */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
-              <span className="text-lg font-bold text-blue-900">Connexion Notion <span className='text-xs text-blue-500'>(facultatif)</span></span>
-            </div>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-700 mb-1">ID de la base Notion</label>
-                <input
-                  className="w-full p-2 border border-gray-300 rounded text-gray-900"
-                  value={notionDatabaseId}
-                  onChange={e => setNotionDatabaseId(e.target.value)}
-                  placeholder="ex: 1234567890abcdef"
-                />
-              </div>
-            </div>
-            <div className="mt-2">
-              {!notionConnected ? (
-                <button
-                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                  onClick={handleNotionConnect}
-                >
-                  Connecter Notion
-                </button>
-              ) : (
-                <div className="bg-purple-50 border border-purple-200 rounded p-2 mt-2">
-                  <span className="font-bold text-purple-800">Connecté à Notion ✅</span>
-                  <span className="text-xs text-gray-700 ml-2">Base : <b>{notionDatabaseId}</b></span>
-                </div>
-              )}
-            </div>
-          </div>
-          {/* Etape 6 : Analyse du code existant (facultatif) */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
-              <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
-            </div>
-            <button
-              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900"
-              onClick={handleScanCodebase}
-              disabled={isScanning}
-            >
-              {isScanning ? "Scan en cours..." : "Analyse votre codebase existant"}
-            </button>
-            {codebaseStructure && (
-              <div className="mt-2 bg-gray-50 border border-gray-200 rounded p-2">
-                <div className="font-bold mb-1 text-gray-700 text-xs">Structure du code détectée :</div>
-                <ul className="text-xs text-gray-800 max-h-24 overflow-auto">
-                  {codebaseStructure.map((file, i) => (
-                    <li key={i}>{file}</li>
-                  ))}
-                </ul>
-                <div className="mt-1 text-gray-500 italic text-xs">Bientôt : analyse avancée des routes, composants, dépendances…</div>
-              </div>
-            )}
-          </div>
-          {/* Etape 7 : Capacité équipe */}
-          <div className="mb-4 pb-4 border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
-              <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
-            </div>
-            <button
-              className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-900 mb-2"
-              onClick={() => setShowCapacity(v => !v)}
-            >
-              {showCapacity ? "Masquer la capacité de l'équipe" : "Prendre en compte la capacité de l'équipe"}
-            </button>
-            {showCapacity && (
-              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
-                <div className="font-bold mb-2 text-blue-800">Capacité de l'équipe</div>
-                <table className="w-full text-xs mb-2">
-                  <thead>
-                    <tr>
-                      <th className="text-left">Nom</th>
-                      <th className="text-left">% temps</th>
-                      <th className="text-left">Commentaires</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {team.map((m, idx) => (
-                      <tr key={idx}>
-                        <td><input className="p-1 border rounded w-full" value={m.name} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, name: e.target.value } : m2))} placeholder="Nom" /></td>
-                        <td><input type="number" min={0} max={100} className="p-1 border rounded w-20" value={m.percent} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, percent: Number(e.target.value) } : m2))} placeholder="%" /></td>
-                        <td><input className="p-1 border rounded w-full" value={m.comment} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, comment: e.target.value } : m2))} placeholder="Commentaires, contraintes, indisponibilités..." /></td>
-                        <td><button className="text-red-600 font-bold" onClick={() => setTeam(t => t.filter((_, i) => i !== idx))}>✕</button></td>
-                      </tr>
+              {/* Affichage et édition des tâches */}
+              {isEditingTasks && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-bold mb-2 text-blue-800">Découpage proposé</h3>
+                  <ul className="mb-4">
+                    {tasks.map((task, idx) => (
+                      <li key={idx} className="flex items-center gap-2 mb-2">
+                        <span className="text-gray-500 select-none cursor-move"
+                          title="Glisser pour réordonner"
+                          draggable
+                          onDragStart={e => e.dataTransfer.setData('text/plain', idx.toString())}
+                          onDrop={e => {
+                            e.preventDefault();
+                            const from = Number(e.dataTransfer.getData('text/plain'));
+                            handleTaskMove(from, idx);
+                          }}
+                          onDragOver={e => e.preventDefault()}
+                        >☰</span>
+                        <input
+                          className="flex-1 p-2 border border-gray-300 rounded text-gray-900"
+                          value={task}
+                          onChange={e => handleTaskChange(idx, e.target.value)}
+                        />
+                        <button
+                          className="ml-2 text-red-600 hover:text-red-800 font-bold"
+                          onClick={() => handleTaskDelete(idx)}
+                          title="Supprimer cette tâche"
+                        >✕</button>
+                      </li>
                     ))}
-                  </tbody>
-                </table>
-                <button className="bg-gray-200 px-2 py-1 rounded text-gray-800 font-bold hover:bg-gray-300 mb-2" onClick={() => setTeam(t => [...t, { name: '', percent: 100, comment: '' }])}>+ Ajouter un membre</button>
-                <div className="mt-2 text-blue-900 font-semibold">Capacité totale : {totalCapacity}%</div>
-                <div className="text-xs text-gray-500 mt-1">(La capacité totale est la somme des % temps de chaque membre. Les commentaires permettent d'ajouter toute contrainte ou indisponibilité.)</div>
-              </div>
-            )}
-          </div>
-          {/* Etape 8 */}
-          <div className="mb-2">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">8</span>
-              <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
+                  </ul>
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      className="bg-gray-200 px-3 py-1 rounded text-gray-800 font-bold hover:bg-gray-300"
+                      onClick={handleTaskAdd}
+                    >+ Ajouter une tâche</button>
+                    <button
+                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                      onClick={() => setIsEditingTasks(false)}
+                    >Modifier la description</button>
+                  </div>
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
-            >
-              Estimer
-            </button>
+            {/* Etape 2 : Date de démarrage */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">2</span>
+                <span className="text-lg font-bold text-blue-900">Date de démarrage</span>
+              </div>
+              <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            {/* Etape 3 : Champs avancés (facultatif) */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
+                <span className="text-lg font-bold text-blue-900">Champs avancés <span className="text-xs text-blue-500">(facultatif)</span></span>
+              </div>
+              <button
+                type="button"
+                className="mb-2 text-blue-600 underline text-sm"
+                onClick={() => setShowAdvancedFields((v) => !v)}
+              >
+                {showAdvancedFields ? "Masquer les champs avancés" : "Afficher les champs avancés"}
+              </button>
+              {showAdvancedFields && (
+                <>
+                  <label className="block font-semibold mt-2 text-blue-700">🔄 Niveau d'intégration SI</label>
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
+                    value={integrationLevel}
+                    onChange={(e) => setIntegrationLevel(e.target.value)}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    <option value="Fonction autonome, sans dépendance SI">Aucune intégration</option>
+                    <option value="Intégration légère via API ou webhook">Interfaçage simple</option>
+                    <option value="Intégration profonde dans plusieurs systèmes (ERP, CRM...)" >Intégration SI complexe</option>
+                  </select>
+                  <label className="block font-semibold mt-2 text-purple-700">📊 Problématique de données</label>
+                  <div className="mb-2 flex flex-col gap-2">
+                    {[
+                      "Aucune problématique de données",
+                      "Données à migrer ou à nettoyer",
+                      "Connexion à des sources de données externes",
+                      "Respect de la RGPD ou contraintes légales"
+                    ].map(option => (
+                      <label key={option} className="flex items-center gap-2 text-gray-900">
+                        <input
+                          type="checkbox"
+                          value={option}
+                          checked={dataConcern.includes(option)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setDataConcern([...dataConcern, option])
+                            } else {
+                              setDataConcern(dataConcern.filter(v => v !== option))
+                            }
+                          }}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Etape 4 : Connexion GitHub (facultatif) */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
+                <span className="text-lg font-bold text-blue-900">Connexion GitHub <span className='text-xs text-blue-500'>(facultatif)</span></span>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Organisation/Utilisateur</label>
+                  <input
+                    className="w-full p-2 border border-gray-300 rounded text-gray-900"
+                    value={githubOwner}
+                    onChange={e => setGithubOwner(e.target.value)}
+                    placeholder="ex: mon-organisation"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Nom du repo</label>
+                  <input
+                    className="w-full p-2 border border-gray-300 rounded text-gray-900"
+                    value={githubRepo}
+                    onChange={e => setGithubRepo(e.target.value)}
+                    placeholder="ex: mon-repo"
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                {!githubConnected ? (
+                  <button
+                    className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+                    onClick={() => { window.location.href = '/api/github/oauth/start' }}
+                  >
+                    Connecter GitHub
+                  </button>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
+                    <span className="font-bold text-green-800">Connecté à GitHub ✅</span>
+                    <span className="text-xs text-gray-700 ml-2">Repo analysé : <b>{githubOwner}/{githubRepo}</b></span>
+                    {githubVelocity && (
+                      <span className="ml-2 text-green-900 text-xs">Vélocité : <b>{githubVelocity.avgPerWeek.toFixed(1)}</b> tickets/semaine, <b>{githubVelocity.avgDuration.toFixed(1)}</b> jours/ticket</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Etape 5 : Connexion Notion (facultatif) */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
+                <span className="text-lg font-bold text-blue-900">Connexion Notion <span className='text-xs text-blue-500'>(facultatif)</span></span>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">ID de la base Notion</label>
+                  <input
+                    className="w-full p-2 border border-gray-300 rounded text-gray-900"
+                    value={notionDatabaseId}
+                    onChange={e => setNotionDatabaseId(e.target.value)}
+                    placeholder="ex: 1234567890abcdef"
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                {!notionConnected ? (
+                  <button
+                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                    onClick={handleNotionConnect}
+                  >
+                    Connecter Notion
+                  </button>
+                ) : (
+                  <div className="bg-purple-50 border border-purple-200 rounded p-2 mt-2">
+                    <span className="font-bold text-purple-800">Connecté à Notion ✅</span>
+                    <span className="text-xs text-gray-700 ml-2">Base : <b>{notionDatabaseId}</b></span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Etape 6 : Analyse du code existant (facultatif) */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
+                <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
+              </div>
+              <button
+                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900"
+                onClick={handleScanCodebase}
+                disabled={isScanning}
+              >
+                {isScanning ? "Scan en cours..." : "Analyse votre codebase existant"}
+              </button>
+              {codebaseStructure && (
+                <div className="mt-2 bg-gray-50 border border-gray-200 rounded p-2">
+                  <div className="font-bold mb-1 text-gray-700 text-xs">Structure du code détectée :</div>
+                  <ul className="text-xs text-gray-800 max-h-24 overflow-auto">
+                    {codebaseStructure.map((file, i) => (
+                      <li key={i}>{file}</li>
+                    ))}
+                  </ul>
+                  <div className="mt-1 text-gray-500 italic text-xs">Bientôt : analyse avancée des routes, composants, dépendances…</div>
+                </div>
+              )}
+            </div>
+            {/* Etape 7 : Capacité équipe */}
+            <div className="mb-4 pb-4 border-b border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
+                <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
+              </div>
+              <button
+                className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-900 mb-2"
+                onClick={() => setShowCapacity(v => !v)}
+              >
+                {showCapacity ? "Masquer la capacité de l'équipe" : "Prendre en compte la capacité de l'équipe"}
+              </button>
+              {showCapacity && (
+                <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
+                  <div className="font-bold mb-2 text-blue-800">Capacité de l'équipe</div>
+                  <table className="w-full text-xs mb-2">
+                    <thead>
+                      <tr>
+                        <th className="text-left">Nom</th>
+                        <th className="text-left">% temps</th>
+                        <th className="text-left">Commentaires</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {team.map((m, idx) => (
+                        <tr key={idx}>
+                          <td><input className="p-1 border rounded w-full" value={m.name} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, name: e.target.value } : m2))} placeholder="Nom" /></td>
+                          <td><input type="number" min={0} max={100} className="p-1 border rounded w-20" value={m.percent} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, percent: Number(e.target.value) } : m2))} placeholder="%" /></td>
+                          <td><input className="p-1 border rounded w-full" value={m.comment} onChange={e => setTeam(t => t.map((m2, i) => i === idx ? { ...m2, comment: e.target.value } : m2))} placeholder="Commentaires, contraintes, indisponibilités..." /></td>
+                          <td><button className="text-red-600 font-bold" onClick={() => setTeam(t => t.filter((_, i) => i !== idx))}>✕</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <button className="bg-gray-200 px-2 py-1 rounded text-gray-800 font-bold hover:bg-gray-300 mb-2" onClick={() => setTeam(t => [...t, { name: '', percent: 100, comment: '' }])}>+ Ajouter un membre</button>
+                  <div className="mt-2 text-blue-900 font-semibold">Capacité totale : {totalCapacity}%</div>
+                  <div className="text-xs text-gray-500 mt-1">(La capacité totale est la somme des % temps de chaque membre. Les commentaires permettent d'ajouter toute contrainte ou indisponibilité.)</div>
+                </div>
+              )}
+            </div>
+            {/* Etape 8 */}
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">8</span>
+                <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 w-full"
+              >
+                Estimer
+              </button>
+            </div>
           </div>
-        </section>
+        </Section>
 
-        {/* Bloc 2 : Estimation IA */}
-        <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
+        <Section id="estimation-ia" title="Estimation IA">
+          {statusMessage && (
+            <StatusMessage
+              type={statusMessage.type}
+              message={statusMessage.message}
+              onClose={() => setStatusMessage(null)}
+              actionLabel={statusMessage.actionLabel}
+              onAction={statusMessage.onAction}
+            />
+          )}
           {/* Bloc 1 : Intro IA */}
           {(() => {
             // Extraire l'intro jusqu'à "Voici une décomposition possible :"
@@ -599,7 +688,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
             {result === "Analyse en cours..." ? (
               <div className="flex-1 flex items-center justify-center">
-                <span className="text-blue-700 text-xl font-bold animate-pulse">Analyse en cours...</span>
+                <Loader />
               </div>
             ) : (
               (() => {
@@ -686,10 +775,9 @@ export default function Home() {
             }
             return null;
           })()}
-        </section>
+        </Section>
 
-        {/* Bloc 3 : Conclusion */}
-        <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
+        <Section id="conclusion" title="Résultat / Conclusion">
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Conclusion</h2>
           {(() => {
             // Retirer l'intro et la liste des tâches du texte de conclusion
@@ -736,6 +824,7 @@ export default function Home() {
                 />}
                 fileName="conclusion.pdf"
                 className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900 flex items-center gap-2"
+                onClick={() => setStatusMessage({ type: 'info', message: 'Téléchargement du PDF lancé.' })}
               >
                 {({ loading }) => loading ? 'Génération PDF...' : '📄 Exporter la conclusion en PDF'}
               </PDFDownloadLink>
@@ -761,52 +850,27 @@ export default function Home() {
               )}
             </>
           )}
-        </section>
+        </Section>
 
-        {/* Bloc 4 : Feedback & historique */}
-        <section className="bg-white p-8 rounded-xl shadow border border-yellow-100 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
-          <h2 className="text-2xl font-bold mb-2 text-yellow-800">Feedback & historique</h2>
-          {/* Feedback post-livraison */}
-          {result && (
-            <div className="mb-8">
-              {!showFeedback && (
-                <button
-                  className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
-                  onClick={() => {
-                    setShowFeedback(true)
-                    setFeedbackEstimation(extractTotalDays(result).toString())
-                  }}
-                >
-                  Saisir le feedback post-livraison
-                </button>
-              )}
-              {showFeedback && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mt-4">
-                  <div className="mb-2 font-bold text-yellow-800">Feedback post-livraison</div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-bold mb-1">Estimation initiale (jours)</label>
-                    <input type="number" className="p-2 border rounded w-full" value={feedbackEstimation} onChange={e => setFeedbackEstimation(e.target.value)} />
-                  </div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-bold mb-1">Durée réelle (jours)</label>
-                    <input type="number" className="p-2 border rounded w-full" value={feedbackReal} onChange={e => setFeedbackReal(e.target.value)} />
-                  </div>
-                  <div className="mb-2">
-                    <label className="block text-sm font-bold mb-1">Commentaire</label>
-                    <textarea className="p-2 border rounded w-full" value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)} rows={3} />
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
-                    <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
-                  </div>
-                </div>
-              )}
-              {feedbackSuccess && (
-                <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
-              )}
+        <Section id="feedback" title="Feedback utilisateur">
+          <div className="pb-6 mb-6 border-b border-gray-200">
+            <label htmlFor="feedback-comment" className="text-xl font-semibold text-gray-800 mb-2 block">Feedback utilisateur</label>
+            <textarea
+              id="feedback-comment"
+              className="w-full rounded-md border border-gray-300 p-3 text-sm mb-4"
+              placeholder="Votre retour nous aide à améliorer l'estimation…"
+              value={feedbackComment}
+              onChange={e => setFeedbackComment(e.target.value)}
+              rows={3}
+            />
+            <div className="flex gap-2 mt-2">
+              <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
+              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
             </div>
-          )}
-          {/* Historique des feedbacks */}
+            {feedbackSuccess && (
+              <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
+            )}
+          </div>
           <div>
             <div className="font-bold text-gray-800 mb-2">Historique des feedbacks</div>
             {feedbackHistory.length === 0 && <div className="text-gray-500 text-sm">Aucun feedback enregistré pour l'instant.</div>}
@@ -833,8 +897,9 @@ export default function Home() {
               </table>
             )}
           </div>
-        </section>
-      </div>
+        </Section>
+      </ColumnsWrapper>
+
       {/* Bouton flottant scroll to top */}
       {showScrollTop && (
         <button
@@ -847,6 +912,14 @@ export default function Home() {
           </svg>
         </button>
       )}
+
+      {/* Bouton sticky en bas de la page (hors <main>) */}
+      <button
+        onClick={handleReset}
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-200 text-gray-700 px-6 py-3 rounded-full shadow-lg font-semibold hover:bg-gray-300 transition"
+      >
+        Réinitialiser
+      </button>
     </main>
   )
 }
