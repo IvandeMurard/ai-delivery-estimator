@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Fragment } from "react"
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { EstimationPDF } from './components/EstimationPDF'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -63,6 +65,10 @@ export default function Home() {
   const [feedbackHistory, setFeedbackHistory] = useState<any[]>([])
   // Pour le bouton scroll to top
   const [showScrollTop, setShowScrollTop] = useState(false)
+  // Pour la connexion Notion
+  const [notionConnected, setNotionConnected] = useState(false)
+  const [notionDatabaseId, setNotionDatabaseId] = useState("")
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     const onScroll = () => {
@@ -224,6 +230,37 @@ export default function Home() {
       }
     })()
   }, [feedbackSuccess])
+
+  const handleNotionConnect = async () => {
+    window.location.href = '/api/notion/oauth/start'
+  }
+
+  const handleExportToNotion = async () => {
+    if (!notionConnected) return
+    setIsExporting(true)
+    try {
+      const response = await fetch('/api/notion/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          feature,
+          tasks,
+          result,
+          startDate,
+          databaseId: notionDatabaseId
+        })
+      })
+      const data = await response.json()
+      if (data.error) {
+        setError(data.error)
+      } else {
+        alert('Estimation exportée vers Notion avec succès !')
+      }
+    } catch (err) {
+      setError('Erreur lors de l\'export vers Notion')
+    }
+    setIsExporting(false)
+  }
 
   return (
     <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
@@ -419,10 +456,43 @@ export default function Home() {
               )}
             </div>
           </div>
-          {/* Etape 5 : Analyse du code existant (facultatif) */}
+          {/* Etape 5 : Connexion Notion (facultatif) */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
+              <span className="text-lg font-bold text-blue-900">Connexion Notion <span className='text-xs text-blue-500'>(facultatif)</span></span>
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-700 mb-1">ID de la base Notion</label>
+                <input
+                  className="w-full p-2 border border-gray-300 rounded text-gray-900"
+                  value={notionDatabaseId}
+                  onChange={e => setNotionDatabaseId(e.target.value)}
+                  placeholder="ex: 1234567890abcdef"
+                />
+              </div>
+            </div>
+            <div className="mt-2">
+              {!notionConnected ? (
+                <button
+                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                  onClick={handleNotionConnect}
+                >
+                  Connecter Notion
+                </button>
+              ) : (
+                <div className="bg-purple-50 border border-purple-200 rounded p-2 mt-2">
+                  <span className="font-bold text-purple-800">Connecté à Notion ✅</span>
+                  <span className="text-xs text-gray-700 ml-2">Base : <b>{notionDatabaseId}</b></span>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Etape 6 : Analyse du code existant (facultatif) */}
+          <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
               <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
             </div>
             <button
@@ -444,10 +514,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 6 : Capacité équipe */}
+          {/* Etape 7 : Capacité équipe */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
               <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
             </div>
             <button
@@ -485,10 +555,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 7 */}
+          {/* Etape 8 */}
           <div className="mb-2">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">8</span>
               <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
             </div>
             <button
@@ -504,6 +574,34 @@ export default function Home() {
         {/* Bloc 2 : Estimation IA */}
         <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
           <h2 className="text-2xl font-bold mb-2 text-green-800">Estimation IA</h2>
+          {/* Export buttons */}
+          {result && (
+            <div className="flex gap-4 mb-4">
+              <PDFDownloadLink
+                document={<EstimationPDF
+                  feature={feature}
+                  tasks={tasks}
+                  result={result}
+                  startDate={startDate}
+                />}
+                fileName="estimation.pdf"
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2"
+              >
+                {({ loading }) => loading ? 'Génération PDF...' : '📄 Exporter en PDF'}
+              </PDFDownloadLink>
+              <button
+                onClick={handleExportToNotion}
+                disabled={!notionConnected || isExporting}
+                className={`px-4 py-2 rounded flex items-center gap-2 ${
+                  notionConnected 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {isExporting ? 'Export en cours...' : '📝 Exporter vers Notion'}
+              </button>
+            </div>
+          )}
           {result && (
             <div className="space-y-8">
               {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
