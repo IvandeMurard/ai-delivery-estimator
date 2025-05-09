@@ -578,12 +578,9 @@ export default function Home() {
           {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
           {(() => {
             let dateLivraison: string | null = null;
-            const dateMatches = Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi));
+            const dateMatches = Array.from(result.matchAll(/\d{2}\/\d{2}\/\d{4}/g));
             if (dateMatches.length > 0) {
-              dateLivraison = dateMatches[0][1];
-            } else {
-              const altDate = result.match(/(?:soit|le|aux alentours du|autour du)\s*(\d{2}\/\d{2}\/\d{4})/i);
-              if (altDate) dateLivraison = altDate[1];
+              dateLivraison = dateMatches[dateMatches.length - 1][0];
             }
             if (dateLivraison) {
               return (
