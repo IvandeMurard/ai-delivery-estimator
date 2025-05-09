@@ -660,13 +660,11 @@ export default function Home() {
           {(() => {
             let resume = result
               ? result
-                // Retirer la date de livraison et les tâches techniques du résumé
                 .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
                 .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
                 .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
                 .replace(/\|.*\|/g, "")
                 .replace(/Calculs secondaires[\s\S]*/i, "")
-                .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
                 .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
                 .replace(/[\n\r]{2,}/g, '\n\n')
                 .trim()
@@ -690,7 +688,6 @@ export default function Home() {
                         .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
                         .replace(/\|.*\|/g, "")
                         .replace(/Calculs secondaires[\s\S]*/i, "")
-                        .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
                         .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
                         .replace(/[\n\r]{2,}/g, '\n\n')
                         .trim()
