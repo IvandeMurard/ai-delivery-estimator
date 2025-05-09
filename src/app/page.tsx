@@ -98,6 +98,7 @@ export default function Home() {
     setResult("Analyse en cours...")
     setShowAdvanced(false)
     setError(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 
     // On envoie la liste validée des tâches à l'API d'estimation
     const response = await fetch("/api/estimate", {
@@ -123,7 +124,6 @@ export default function Home() {
       return
     }
     setResult(data.output)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // Pour garantir le même affichage après estimation depuis n'importe quel bouton
@@ -595,46 +595,54 @@ export default function Home() {
           })()}
 
           {/* Bloc Tâches techniques sous forme de tableau, avec total déplacé ici */}
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between">
             <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
-            <table className="w-full text-left border-collapse mb-6">
-              <thead>
-                <tr className="border-b border-blue-200">
-                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
-                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
-                </tr>
-              </thead>
-              <tbody>
+            {result === "Analyse en cours..." ? (
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-blue-700 text-xl font-bold animate-pulse">Analyse en cours...</span>
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-left border-collapse mb-6">
+                  <thead>
+                    <tr className="border-b border-blue-200">
+                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
+                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      // Extraction améliorée des tâches et estimations depuis le texte
+                      // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
+                      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
+                      return taskLines.map((l, idx) => {
+                        // Ex: "1. Analyse ... : 3 jours"
+                        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                        return (
+                          <tr key={idx} className="border-b border-blue-100">
+                            <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
+                            <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+                {/* Total estimé en gras */}
                 {(() => {
-                  // Extraction améliorée des tâches et estimations depuis le texte
-                  // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
-                  const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
-                  return taskLines.map((l, idx) => {
-                    // Ex: "1. Analyse ... : 3 jours"
-                    const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                  // Cherche le total dans le texte
+                  const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
+                  if (totalMatch) {
                     return (
-                      <tr key={idx} className="border-b border-blue-100">
-                        <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
-                        <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
-                      </tr>
+                      <div className="text-right text-lg font-bold text-blue-900 mt-2">
+                        Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
+                      </div>
                     );
-                  });
+                  }
+                  return null;
                 })()}
-              </tbody>
-            </table>
-            {/* Total estimé en gras */}
-            {(() => {
-              // Cherche le total dans le texte
-              const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
-              if (totalMatch) {
-                return (
-                  <div className="text-right text-lg font-bold text-blue-900 mt-2">
-                    Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+              </>
+            )}
           </div>
         </section>
 
