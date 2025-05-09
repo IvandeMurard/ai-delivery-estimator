@@ -699,6 +699,8 @@ export default function Home() {
             // Retirer la liste des tâches techniques (lignes "1. ... : X jours" ou "- ... : X jours")
             conclusion = conclusion.replace(/(\d+\.\s.*?:\s*\d+\s*jours?\s*\n?)+/g, '');
             conclusion = conclusion.replace(/(-\s.*?:\s*\d+\s*jours?\s*\n?)+/g, '');
+            // Supprimer aussi toute liste numérotée de tâches sans estimation (ex: 1. ...\n2. ...)
+            conclusion = conclusion.replace(/(\d+\.\s.*?\n)+/g, '');
             // Nettoyer les retours à la ligne multiples
             conclusion = conclusion.replace(/[\n\r]{2,}/g, '\n\n').trim();
             // Supprimer "Cependant" si c'est la première phrase ou après un saut de ligne
