@@ -72,9 +72,9 @@ interface ConclusionPDFProps {
 
 function extractTasksAndTotal(text: string) {
   // Extraction des tâches techniques et estimations depuis le texte
-  const taskLines = (text.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || text.match(/-.*?:\s*\d+\s*jours?/g) || []);
+  const taskLines = (text.match(/(\d+\.|-)\s.*?(?::|\()\s*\d+\s*jours?\)|\d+\.\s.*?:\s*\d+\s*jours?/g) || []);
   const tasks = taskLines.map(l => {
-    const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+    const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*(?::|\()\s*(\d+\s*jours?)\)?/);
     return {
       name: match ? match[1].trim() : l,
       days: match ? match[2] : '—'
