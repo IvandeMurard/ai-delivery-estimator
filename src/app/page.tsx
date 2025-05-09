@@ -574,8 +574,101 @@ export default function Home() {
 
         {/* Bloc 2 : Estimation IA */}
         <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
-          <h2 className="text-2xl font-bold mb-2 text-green-800">Estimation IA</h2>
-          {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
+          {/* Bloc 1 : Intro IA */}
+          {(() => {
+            // Extraire l'intro jusqu'à "Voici une décomposition possible :"
+            let intro = '';
+            let afterIntro = result;
+            if (result) {
+              const introMatch = result.match(/([\s\S]*?Voici une décomposition possible ?[:：])/i);
+              if (introMatch) {
+                intro = introMatch[0].trim();
+                afterIntro = result.slice(intro.length).trim();
+              }
+            }
+            return (
+              <div className="bg-blue-100 rounded-lg p-6 mb-4">
+                <h2 className="text-xl font-bold text-blue-900 mb-2">Analyse IA</h2>
+                <div className="text-gray-900 whitespace-pre-line leading-relaxed">{intro}</div>
+              </div>
+            );
+          })()}
+
+          {/* Bloc 2 : Tâches techniques (tableau bleu) */}
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between">
+            <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
+            {result === "Analyse en cours..." ? (
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-blue-700 text-xl font-bold animate-pulse">Analyse en cours...</span>
+              </div>
+            ) : (
+              (() => {
+                // Extraction robuste des tâches techniques et estimations depuis le texte IA
+                const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
+                if (taskLines.length > 0) {
+                  return (
+                    <>
+                      <table className="w-full text-left border-collapse mb-6">
+                        <thead>
+                          <tr className="border-b border-blue-200">
+                            <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
+                            <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {taskLines.map((l, idx) => {
+                            const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                            const nomTache = match ? match[1].trim() : l;
+                            const estimation = match ? match[2] : '—';
+                            return (
+                              <tr key={idx} className="border-b border-blue-100">
+                                <td className="py-2 px-3 align-top text-gray-900">{nomTache}</td>
+                                <td className="py-2 px-3 align-top font-bold text-blue-800">{estimation}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      {/* Total estimé en gras */}
+                      {(() => {
+                        const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
+                        if (totalMatch) {
+                          return (
+                            <div className="text-right text-lg font-bold text-blue-900 mt-2">
+                              Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </>
+                  );
+                } else {
+                  // Fallback : afficher la liste validée par l'utilisateur (tasks) avec estimation vide
+                  return (
+                    <table className="w-full text-left border-collapse mb-6">
+                      <thead>
+                        <tr className="border-b border-blue-200">
+                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
+                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tasks.map((task, idx) => (
+                          <tr key={idx} className="border-b border-blue-100">
+                            <td className="py-2 px-3 align-top text-gray-900">{task}</td>
+                            <td className="py-2 px-3 align-top font-bold text-blue-800">—</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                }
+              })()
+            )}
+          </div>
+
+          {/* Bloc 3 : Date de livraison estimée (bloc vert) */}
           {(() => {
             let dateLivraison: string | null = null;
             const dateMatches = Array.from(result.matchAll(/\d{2}\/\d{2}\/\d{4}/g));
@@ -593,86 +686,29 @@ export default function Home() {
             }
             return null;
           })()}
-
-          {/* Bloc Tâches techniques sous forme de tableau, avec total déplacé ici */}
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between">
-            <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
-            {result === "Analyse en cours..." ? (
-              <div className="flex-1 flex items-center justify-center">
-                <span className="text-blue-700 text-xl font-bold animate-pulse">Analyse en cours...</span>
-              </div>
-            ) : (
-              (() => {
-                // Extraction robuste des tâches techniques et estimations depuis le texte IA
-                const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
-                if (taskLines.length === 0) {
-                  return (
-                    <div className="text-red-700 font-bold text-center py-8">
-                      ⚠️ L'IA n'a pas généré de découpage technique exploitable.<br />Essayez de relancer l'estimation ou de reformuler la demande.
-                    </div>
-                  );
-                }
-                return (
-                  <>
-                    <table className="w-full text-left border-collapse mb-6">
-                      <thead>
-                        <tr className="border-b border-blue-200">
-                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
-                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {taskLines.map((l, idx) => {
-                          const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
-                          const nomTache = match ? match[1].trim() : l;
-                          const estimation = match ? match[2] : '—';
-                          return (
-                            <tr key={idx} className="border-b border-blue-100">
-                              <td className="py-2 px-3 align-top text-gray-900">{nomTache}</td>
-                              <td className="py-2 px-3 align-top font-bold text-blue-800">{estimation}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    {/* Total estimé en gras */}
-                    {(() => {
-                      const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
-                      if (totalMatch) {
-                        return (
-                          <div className="text-right text-lg font-bold text-blue-900 mt-2">
-                            Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </>
-                );
-              })()
-            )}
-          </div>
         </section>
 
         {/* Bloc 3 : Conclusion */}
         <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Conclusion</h2>
           {(() => {
-            let resume = result
-              ? result
-                .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
-                .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
-                .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
-                .replace(/\|.*\|/g, "")
-                .replace(/Calculs secondaires[\s\S]*/i, "")
-                .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
-                .replace(/[\n\r]{2,}/g, '\n\n')
-                .trim()
-              : '';
-            resume = resume.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
-            resume = resume.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
-            return resume ? (
-              <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
+            // Retirer l'intro et la liste des tâches du texte de conclusion
+            let conclusion = result || '';
+            // Retirer l'intro jusqu'à "Voici une décomposition possible :"
+            conclusion = conclusion.replace(/[\s\S]*?Voici une décomposition possible ?[:：]/i, '');
+            // Retirer la liste des tâches techniques (lignes "1. ... : X jours" ou "- ... : X jours")
+            conclusion = conclusion.replace(/(\d+\.\s.*?:\s*\d+\s*jours?\s*\n?)+/g, '');
+            conclusion = conclusion.replace(/(-\s.*?:\s*\d+\s*jours?\s*\n?)+/g, '');
+            // Nettoyer les retours à la ligne multiples
+            conclusion = conclusion.replace(/[\n\r]{2,}/g, '\n\n').trim();
+            // Supprimer "Cependant" si c'est la première phrase ou après un saut de ligne
+            conclusion = conclusion.replace(/^(\s*)Cependant[,.\s]+/i, '$1');
+            conclusion = conclusion.replace(/([\n\r]+)Cependant[,.\s]+/gi, '$1');
+            // Mise en forme
+            conclusion = conclusion.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
+            conclusion = conclusion.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
+            return conclusion ? (
+              <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: conclusion }} />
             ) : null;
           })()}
           {/* Export PDF de la conclusion */}
