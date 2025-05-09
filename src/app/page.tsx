@@ -574,155 +574,79 @@ export default function Home() {
         {/* Bloc 2 : Estimation IA */}
         <section className="bg-white p-8 rounded-xl shadow border border-green-100 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
           <h2 className="text-2xl font-bold mb-2 text-green-800">Estimation IA</h2>
-          {/* Export buttons */}
-          {result && (
-            <div className="flex gap-4 mb-4">
-              <PDFDownloadLink
-                document={<EstimationPDF
-                  feature={feature}
-                  tasks={tasks}
-                  result={result}
-                  startDate={startDate}
-                />}
-                fileName="estimation.pdf"
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2"
-              >
-                {({ loading }) => loading ? 'Génération PDF...' : '📄 Exporter en PDF'}
-              </PDFDownloadLink>
-              <button
-                onClick={handleExportToNotion}
-                disabled={!notionConnected || isExporting}
-                className={`px-4 py-2 rounded flex items-center gap-2 ${
-                  notionConnected 
-                    ? 'bg-purple-600 text-white hover:bg-purple-700' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {isExporting ? 'Export en cours...' : '📝 Exporter vers Notion'}
-              </button>
-            </div>
-          )}
-          {result && (
-            <div className="space-y-8">
-              {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
-              {(() => {
-                let dateLivraison: string | null = null;
-                const dateMatches = Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi));
-                if (dateMatches.length > 0) {
-                  dateLivraison = dateMatches[0][1];
-                } else {
-                  const altDate = result.match(/(?:soit|le|aux alentours du|autour du)\s*(\d{2}\/\d{2}\/\d{4})/i);
-                  if (altDate) dateLivraison = altDate[1];
-                }
-                if (dateLivraison) {
-                  return (
-                    <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
-                      <span role="img" aria-label="date">📆</span>
-                      <span>Livraison estimée :</span>
-                      <span className="underline decoration-green-400">{dateLivraison}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
+          {/* Bloc vert date de livraison estimée (toujours affiché si trouvée) */}
+          {(() => {
+            let dateLivraison: string | null = null;
+            const dateMatches = Array.from(result.matchAll(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/gi));
+            if (dateMatches.length > 0) {
+              dateLivraison = dateMatches[0][1];
+            } else {
+              const altDate = result.match(/(?:soit|le|aux alentours du|autour du)\s*(\d{2}\/\d{2}\/\d{4})/i);
+              if (altDate) dateLivraison = altDate[1];
+            }
+            if (dateLivraison) {
+              return (
+                <div className="text-2xl font-extrabold text-green-800 flex items-center gap-2 bg-green-50 border border-green-200 rounded p-4 justify-center mb-6">
+                  <span role="img" aria-label="date">📆</span>
+                  <span>Livraison estimée :</span>
+                  <span className="underline decoration-green-400">{dateLivraison}</span>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
-              {/* Bloc Tâches techniques sous forme de tableau, avec total déplacé ici */}
-              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-                <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
-                <table className="w-full text-left border-collapse mb-6">
-                  <thead>
-                    <tr className="border-b border-blue-200">
-                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
-                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      // Extraction améliorée des tâches et estimations depuis le texte
-                      // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
-                      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
-                      return taskLines.map((l, idx) => {
-                        // Ex: "1. Analyse ... : 3 jours"
-                        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
-                        return (
-                          <tr key={idx} className="border-b border-blue-100">
-                            <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
-                            <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
-                {/* Total estimé en gras */}
+          {/* Bloc Tâches techniques sous forme de tableau, avec total déplacé ici */}
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+            <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
+            <table className="w-full text-left border-collapse mb-6">
+              <thead>
+                <tr className="border-b border-blue-200">
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
+                  <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
+                </tr>
+              </thead>
+              <tbody>
                 {(() => {
-                  // Cherche le total dans le texte
-                  const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
-                  if (totalMatch) {
+                  // Extraction améliorée des tâches et estimations depuis le texte
+                  // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
+                  const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
+                  return taskLines.map((l, idx) => {
+                    // Ex: "1. Analyse ... : 3 jours"
+                    const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
                     return (
-                      <div className="text-right text-lg font-bold text-blue-900 mt-2">
-                        Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
-                      </div>
+                      <tr key={idx} className="border-b border-blue-100">
+                        <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
+                        <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
+                      </tr>
                     );
-                  }
-                  return null;
+                  });
                 })()}
-              </div>
-
-              {/* Bloc Résumé (anciennement Conclusion, sans Tâches Techniques, plus aéré) */}
-              {(() => {
-                // Retire la partie Tâches Techniques du résumé
-                let resume = result
-                  .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
-                  .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
-                  .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
-                  .replace(/\|.*\|/g, "")
-                  .replace(/Calculs secondaires[\s\S]*/i, "")
-                  .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
-                  .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
-                  .replace(/[\n\r]{2,}/g, '\n\n')
-                  .trim();
-                // Met en gras les dates (jj/mm/aaaa)
-                resume = resume.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
-                // Met en gras le total de jours estimés (ex: "11 jours", "13 jours")
-                resume = resume.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
-                return resume ? (
-                  <div className="bg-gray-100 p-10 rounded-xl border border-gray-200">
-                    <h3 className="text-xl font-bold text-gray-800 mb-6">Résumé</h3>
-                    <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
+              </tbody>
+            </table>
+            {/* Total estimé en gras */}
+            {(() => {
+              // Cherche le total dans le texte
+              const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
+              if (totalMatch) {
+                return (
+                  <div className="text-right text-lg font-bold text-blue-900 mt-2">
+                    Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
                   </div>
-                ) : null;
-              })()}
-
-              {advancedSection && (
-                <>
-                  <div className="mb-4 border-b border-gray-200"></div>
-                  <button
-                    className="mt-2 text-blue-600 underline text-sm"
-                    onClick={() => setShowAdvanced((v) => !v)}
-                  >
-                    {showAdvanced ? "Masquer les infos avancées" : "Afficher plus (calculs secondaires)"}
-                  </button>
-                  {showAdvanced && (
-                    <section className="mt-4">
-                      <h3 className="text-lg font-semibold text-yellow-700 mb-2">Calculs secondaires</h3>
-                      <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
-                        <pre className="whitespace-pre-wrap text-yellow-900">{advancedSection}</pre>
-                      </div>
-                    </section>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+                );
+              }
+              return null;
+            })()}
+          </div>
         </section>
 
-        {/* Bloc 3 : Résumé */}
+        {/* Bloc 3 : Conclusion */}
         <section className="bg-white p-8 rounded-xl shadow border border-gray-200 flex flex-col gap-8 col-span-1 min-w-[350px] flex-1">
-          <h2 className="text-2xl font-bold mb-2 text-gray-800">Résumé</h2>
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Conclusion</h2>
           {(() => {
             let resume = result
               ? result
+                // Retirer la date de livraison et les tâches techniques du résumé
                 .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
                 .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
                 .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
@@ -739,6 +663,26 @@ export default function Home() {
               <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
             ) : null;
           })()}
+          {/* Affichage des calculs secondaires ou infos avancées si présentes */}
+          {advancedSection && (
+            <>
+              <div className="mb-4 border-b border-gray-200"></div>
+              <button
+                className="mt-2 text-blue-600 underline text-sm"
+                onClick={() => setShowAdvanced((v) => !v)}
+              >
+                {showAdvanced ? "Masquer les infos avancées" : "Afficher plus (calculs secondaires)"}
+              </button>
+              {showAdvanced && (
+                <section className="mt-4">
+                  <h3 className="text-lg font-semibold text-yellow-700 mb-2">Calculs secondaires</h3>
+                  <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+                    <pre className="whitespace-pre-wrap text-yellow-900">{advancedSection}</pre>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
         </section>
 
         {/* Bloc 4 : Feedback & historique */}
