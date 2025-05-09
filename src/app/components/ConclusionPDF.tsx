@@ -35,7 +35,6 @@ const styles = StyleSheet.create({
     borderRadius: 6
   },
   table: {
-    display: 'table',
     width: 'auto',
     marginBottom: 10,
     marginTop: 10
