@@ -306,10 +306,24 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 2 : Champs avancés (facultatif) */}
+          {/* Etape 2 : Date de démarrage */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">2</span>
+              <span className="text-lg font-bold text-blue-900">Date de démarrage</span>
+            </div>
+            <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
+            <input
+              type="date"
+              className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          {/* Etape 3 : Champs avancés (facultatif) */}
+          <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
               <span className="text-lg font-bold text-blue-900">Champs avancés <span className="text-xs text-blue-500">(facultatif)</span></span>
             </div>
             <button
@@ -321,13 +335,6 @@ export default function Home() {
             </button>
             {showAdvancedFields && (
               <>
-                <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
-                <input
-                  type="date"
-                  className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
                 <label className="block font-semibold mt-2 text-blue-700">🔄 Niveau d'intégration SI</label>
                 <select
                   className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
@@ -367,10 +374,10 @@ export default function Home() {
               </>
             )}
           </div>
-          {/* Etape 3 : Connexion GitHub (facultatif) */}
+          {/* Etape 4 : Connexion GitHub (facultatif) */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
               <span className="text-lg font-bold text-blue-900">Connexion GitHub <span className='text-xs text-blue-500'>(facultatif)</span></span>
             </div>
             <div className="flex gap-2 items-end">
@@ -412,10 +419,10 @@ export default function Home() {
               )}
             </div>
           </div>
-          {/* Etape 4 : Analyse du code existant (facultatif) */}
+          {/* Etape 5 : Analyse du code existant (facultatif) */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
               <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
             </div>
             <button
@@ -437,10 +444,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 5 : Capacité équipe */}
+          {/* Etape 6 : Capacité équipe */}
           <div className="mb-4 pb-4 border-b border-blue-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
               <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
             </div>
             <button
@@ -478,10 +485,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Etape 6 */}
+          {/* Etape 7 */}
           <div className="mb-2">
             <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
+              <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
               <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
             </div>
             <button
