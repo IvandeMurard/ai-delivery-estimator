@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Fragment } from "react"
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { EstimationPDF } from './components/EstimationPDF'
+import { ConclusionPDF } from './components/ConclusionPDF'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -663,6 +664,35 @@ export default function Home() {
               <div className="text-gray-900 whitespace-pre-line leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: resume }} />
             ) : null;
           })()}
+          {/* Export PDF de la conclusion */}
+          {result && (
+            <div className="mb-4">
+              <PDFDownloadLink
+                document={<ConclusionPDF
+                  conclusionText={(() => {
+                    let resume = result
+                      ? result
+                        .replace(/Livraison estimée\s*:\s*\d{2}\/\d{2}\/\d{4}/gi, "")
+                        .replace(/\d+\.\s.*?:\s*\d+\s*jours?/g, "")
+                        .replace(/-\s.*?:\s*\d+\s*jours?/g, "")
+                        .replace(/\|.*\|/g, "")
+                        .replace(/Calculs secondaires[\s\S]*/i, "")
+                        .replace(/Tâches techniques\s*:[\s\S]*?(?=Total|Estimation totale|\d+\s*jours? de travail|$)/i, "")
+                        .replace(/Total\s*:\s*\d+\s*jours? de travail|Estimation totale\s*:?-?\s*\d+\s*jours? de travail/i, "")
+                        .replace(/[\n\r]{2,}/g, '\n\n')
+                        .trim()
+                      : '';
+                    return resume;
+                  })()}
+                  advancedSection={advancedSection}
+                />}
+                fileName="conclusion.pdf"
+                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900 flex items-center gap-2"
+              >
+                {({ loading }) => loading ? 'Génération PDF...' : '📄 Exporter la conclusion en PDF'}
+              </PDFDownloadLink>
+            </div>
+          )}
           {/* Affichage des calculs secondaires ou infos avancées si présentes */}
           {advancedSection && (
             <>
