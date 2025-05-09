@@ -33,6 +33,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
     padding: 10,
     borderRadius: 6
+  },
+  table: {
+    display: 'table',
+    width: 'auto',
+    marginBottom: 10,
+    marginTop: 10
+  },
+  tableRow: {
+    flexDirection: 'row',
+  },
+  tableHeader: {
+    fontWeight: 'bold',
+    fontSize: 13,
+    color: '#1e40af',
+    padding: 4,
+    borderBottom: '1px solid #1e40af',
+    flex: 1
+  },
+  tableCell: {
+    fontSize: 12,
+    color: '#1f2937',
+    padding: 4,
+    flex: 1
+  },
+  total: {
+    textAlign: 'right',
+    fontWeight: 'bold',
+    fontSize: 13,
+    color: '#be185d',
+    marginTop: 6
   }
 })
 
@@ -41,20 +71,61 @@ interface ConclusionPDFProps {
   advancedSection?: string | null
 }
 
-export const ConclusionPDF = ({ conclusionText, advancedSection }: ConclusionPDFProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <Text style={styles.title}>Conclusion de l'estimation</Text>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Résumé</Text>
-        <Text style={styles.text}>{conclusionText}</Text>
-      </View>
-      {advancedSection && (
+function extractTasksAndTotal(text: string) {
+  // Extraction des tâches techniques et estimations depuis le texte
+  const taskLines = (text.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || text.match(/-.*?:\s*\d+\s*jours?/g) || []);
+  const tasks = taskLines.map(l => {
+    const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+    return {
+      name: match ? match[1].trim() : l,
+      days: match ? match[2] : '—'
+    }
+  })
+  // Extraction du total
+  const totalMatch = text.match(/total de (\d+) jours?/i) || text.match(/environ (\d+) jours?/i)
+  const total = totalMatch ? totalMatch[1] : null
+  return { tasks, total }
+}
+
+export const ConclusionPDF = ({ conclusionText, advancedSection }: ConclusionPDFProps) => {
+  const { tasks, total } = extractTasksAndTotal(conclusionText)
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.title}>Conclusion de l'estimation</Text>
+        {/* Tableau des tâches techniques */}
+        {tasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tâches techniques</Text>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableHeader}>Tâches</Text>
+                <Text style={styles.tableHeader}>Estimation</Text>
+              </View>
+              {tasks.map((task, idx) => (
+                <View style={styles.tableRow} key={idx}>
+                  <Text style={styles.tableCell}>{task.name}</Text>
+                  <Text style={styles.tableCell}>{task.days}</Text>
+                </View>
+              ))}
+            </View>
+            {total && (
+              <Text style={styles.total}>Total estimé : {total} jours</Text>
+            )}
+          </View>
+        )}
+        {/* Résumé/Conclusion */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Calculs secondaires</Text>
-          <Text style={styles.advanced}>{advancedSection}</Text>
+          <Text style={styles.sectionTitle}>Résumé</Text>
+          <Text style={styles.text}>{conclusionText}</Text>
         </View>
-      )}
-    </Page>
-  </Document>
-) 
+        {advancedSection && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Calculs secondaires</Text>
+            <Text style={styles.advanced}>{advancedSection}</Text>
+          </View>
+        )}
+      </Page>
+    </Document>
+  )
+} 
