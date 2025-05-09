@@ -602,46 +602,54 @@ export default function Home() {
                 <span className="text-blue-700 text-xl font-bold animate-pulse">Analyse en cours...</span>
               </div>
             ) : (
-              <>
-                <table className="w-full text-left border-collapse mb-6">
-                  <thead>
-                    <tr className="border-b border-blue-200">
-                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
-                      <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              (() => {
+                // Extraction robuste des tâches techniques et estimations depuis le texte IA
+                const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
+                if (taskLines.length === 0) {
+                  return (
+                    <div className="text-red-700 font-bold text-center py-8">
+                      ⚠️ L'IA n'a pas généré de découpage technique exploitable.<br />Essayez de relancer l'estimation ou de reformuler la demande.
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <table className="w-full text-left border-collapse mb-6">
+                      <thead>
+                        <tr className="border-b border-blue-200">
+                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-3/4">Tâches</th>
+                          <th className="py-2 px-3 font-bold text-blue-800 text-lg w-1/4">Estimation</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taskLines.map((l, idx) => {
+                          const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                          const nomTache = match ? match[1].trim() : l;
+                          const estimation = match ? match[2] : '—';
+                          return (
+                            <tr key={idx} className="border-b border-blue-100">
+                              <td className="py-2 px-3 align-top text-gray-900">{nomTache}</td>
+                              <td className="py-2 px-3 align-top font-bold text-blue-800">{estimation}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {/* Total estimé en gras */}
                     {(() => {
-                      // Extraction améliorée des tâches et estimations depuis le texte
-                      // Cherche les lignes du type "1. ... : 2 jours" ou "- ... : 2 jours"
-                      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-\s.*?:\s*\d+\s*jours?/g) || []);
-                      return taskLines.map((l, idx) => {
-                        // Ex: "1. Analyse ... : 3 jours"
-                        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                      const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
+                      if (totalMatch) {
                         return (
-                          <tr key={idx} className="border-b border-blue-100">
-                            <td className="py-2 px-3 align-top text-gray-900">{match ? match[1].trim() : l}</td>
-                            <td className="py-2 px-3 align-top font-bold text-blue-800">{match ? match[2] : ''}</td>
-                          </tr>
+                          <div className="text-right text-lg font-bold text-blue-900 mt-2">
+                            Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
+                          </div>
                         );
-                      });
+                      }
+                      return null;
                     })()}
-                  </tbody>
-                </table>
-                {/* Total estimé en gras */}
-                {(() => {
-                  // Cherche le total dans le texte
-                  const totalMatch = result.match(/total de (\d+) jours?/i) || result.match(/environ (\d+) jours?/i);
-                  if (totalMatch) {
-                    return (
-                      <div className="text-right text-lg font-bold text-blue-900 mt-2">
-                        Total estimé : <span className="text-pink-700 font-extrabold">{totalMatch[1]} jours</span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </>
+                  </>
+                );
+              })()
             )}
           </div>
         </section>
