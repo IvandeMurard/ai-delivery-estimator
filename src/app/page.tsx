@@ -143,7 +143,7 @@ export default function Home() {
     setCodebaseStructure(null)
     setError(null)
     try {
-      const res = await fetchWithTimeout('/api/scan-codebase', 15000)
+      const res = await fetchWithTimeout('/api/scan-codebase', {}, 15000)
       const data = await res.json()
       if (data.error) {
         setError(data.error)
@@ -264,7 +264,7 @@ export default function Home() {
     if (!githubOwner || !githubRepo) return;
     (async () => {
       try {
-        const res = await fetchWithTimeout(`/api/github/issues?owner=${encodeURIComponent(githubOwner)}&repo=${encodeURIComponent(githubRepo)}`, 15000)
+        const res = await fetchWithTimeout(`/api/github/issues?owner=${encodeURIComponent(githubOwner)}&repo=${encodeURIComponent(githubRepo)}`, {}, 15000)
         if (res.status === 200) {
           setGithubConnected(true)
           const data = await res.json()
@@ -300,11 +300,7 @@ export default function Home() {
 
   const handleSendFeedback = async () => {
     setFeedbackSuccess(false)
-    const res = await fetchWithTimeout('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estimation: feedbackEstimation, realDuration: feedbackReal, comment: feedbackComment })
-    }, 15000)
+    const res = await fetchWithTimeout('/api/feedback', {}, 15000)
     const data = await res.json()
     if (data.success) {
       setFeedbackSuccess(true)
@@ -318,7 +314,7 @@ export default function Home() {
   // Historique des feedbacks
   useEffect(() => {
     (async () => {
-      const res = await fetchWithTimeout('/api/feedback', 15000)
+      const res = await fetchWithTimeout('/api/feedback', {}, 15000)
       const data = await res.json()
       if (data.feedbacks) {
         setFeedbackHistory(data.feedbacks.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()))
