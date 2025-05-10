@@ -406,14 +406,14 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
+    <main className="flex flex-col items-center p-6 lg:p-10 xl:p-16 bg-gray-50 w-full">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
       <ColumnsWrapper>
         <Section id="saisie-contexte" title="Saisie & contexte">
           {/* Bloc 1 : Saisie & contexte */}
           <div
-            className="w-full flex flex-col gap-6 md:gap-8 px-2 sm:px-4 md:px-6 lg:px-8 mb-12 min-h-[400px]"
+            className="w-full flex flex-col gap-6 md:gap-8 mb-8"
           >
             {/* Etape 1 : Découpage en tâches techniques */}
             <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
@@ -794,7 +794,7 @@ export default function Home() {
           })()}
 
           {/* Bloc 2 : Tâches techniques (tableau bleu) */}
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between mb-4">
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col justify-between mb-4 overflow-y-auto max-h-[420px]">
             <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
             {result === "Analyse en cours..." ? (
               <div className="flex-1 flex items-center justify-center">
