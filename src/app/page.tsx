@@ -406,15 +406,16 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col items-center p-6 lg:p-10 xl:p-16 bg-gray-50 w-full">
+    <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
+      {/* Nav ou sommaire fixe (optionnel, à activer plus tard) */}
+      {/* <nav className="fixed left-0 top-24 z-40 w-48"> ... </nav> */}
+
       <ColumnsWrapper>
-        <Section id="saisie-contexte" title="Saisie & contexte">
-          {/* Bloc 1 : Saisie & contexte */}
-          <div
-            className="w-full flex flex-col gap-6 md:gap-8 mb-8"
-          >
+        <section id="saisie-contexte" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6 text-blue-900">Saisie & contexte</h2>
+          <div className="w-full flex flex-col gap-6 md:gap-8 mb-8">
             {/* Etape 1 : Découpage en tâches techniques */}
             <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
@@ -761,9 +762,10 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </Section>
+        </section>
 
-        <Section id="estimation-ia" title="Estimation IA">
+        <section id="estimation-ia" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6 text-blue-900">Estimation IA</h2>
           {statusMessage && (
             <StatusMessage
               type={statusMessage.type}
@@ -899,9 +901,10 @@ export default function Home() {
             }
             return null;
           })()}
-        </Section>
+        </section>
 
-        <Section id="conclusion" title="Résultat / Conclusion">
+        <section id="conclusion" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6 text-blue-900">Résultat / Conclusion</h2>
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Conclusion</h2>
           {(() => {
             // Retirer l'intro et la liste des tâches du texte de conclusion
@@ -974,9 +977,10 @@ export default function Home() {
               )}
             </>
           )}
-        </Section>
+        </section>
 
-        <Section id="feedback" title="Feedback & historique">
+        <section id="feedback" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6 text-blue-900">Feedback & historique</h2>
           <div className="pb-6 mb-6 border-b border-gray-200">
             <div className="mb-4 text-gray-700 text-sm">Vos retours aident l'IA à mieux estimer vos futures fonctionnalités.</div>
             <button
@@ -1057,7 +1061,7 @@ export default function Home() {
               </table>
             )}
           </div>
-        </Section>
+        </section>
       </ColumnsWrapper>
 
       {/* Bouton flottant scroll to top */}
