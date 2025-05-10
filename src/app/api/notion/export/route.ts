@@ -3,7 +3,8 @@ import { Client } from '@notionhq/client'
 import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
-  const notionToken = cookies().get('notion_token')?.value
+  const cookieStore = await cookies();
+  const notionToken = cookieStore.get('notion_token')?.value;
 
   if (!notionToken) {
     return NextResponse.json({ error: 'Not authenticated with Notion' }, { status: 401 })
