@@ -12,9 +12,8 @@ import StatusMessage from './components/StatusMessage'
 import { fetchWithTimeout } from './lib/fetchWithTimeout'
 import { MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
 import StepLayout from './components/StepLayout'
-import { FileText, Brain, CheckCircle } from 'lucide-react'
 import StepNav from './components/StepNav'
-import { Pen } from 'lucide-react'
+import { Pen, Brain, Calendar, CheckCircle } from 'lucide-react'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
