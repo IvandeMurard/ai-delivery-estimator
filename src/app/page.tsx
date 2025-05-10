@@ -203,7 +203,7 @@ export default function Home() {
       setStatusMessage({
         type: 'error',
         message: err.message === 'timeout' ? "Le serveur met trop de temps à répondre. Veuillez réessayer." : "Une erreur est survenue lors de l'analyse.",
-        actionLabel: 'Relancer l'analyse',
+        actionLabel: "Relancer l'analyse",
         onAction: handleSubmit
       })
     }
