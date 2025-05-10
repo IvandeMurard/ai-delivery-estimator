@@ -11,6 +11,10 @@ import Section from './components/Section'
 import StatusMessage from './components/StatusMessage'
 import { fetchWithTimeout } from './lib/fetchWithTimeout'
 import { MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
+import StepLayout from './components/StepLayout'
+import { FileText, Brain, CheckCircle } from 'lucide-react'
+import StepNav from './components/StepNav'
+import { Pen } from 'lucide-react'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -29,6 +33,14 @@ function extractAdvancedSection(response: string): string | null {
   const match = response.match(/(Calculs secondaires[\s\S]*)/i)
   return match ? match[1].trim() : null
 }
+
+const steps = [
+  { id: 'contexte', label: 'Saisie & contexte', icon: <Pen className="w-5 h-5" /> },
+  { id: 'estimation', label: 'Estimation IA', icon: <Brain className="w-5 h-5" /> },
+  { id: 'timeline', label: 'Livraison', icon: <Calendar className="w-5 h-5" /> },
+  { id: 'conclusion', label: 'Conclusion', icon: <CheckCircle className="w-5 h-5" /> },
+  { id: 'feedback', label: 'Feedback', icon: <MessageCircle className="w-5 h-5" /> },
+];
 
 export default function Home() {
   const [feature, setFeature] = useState("")
@@ -407,14 +419,12 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
+      {/* StepNav : sticky top sur mobile, fixed sur desktop */}
+      <StepNav steps={steps} />
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
-      {/* Nav ou sommaire fixe (optionnel, à activer plus tard) */}
-      {/* <nav className="fixed left-0 top-24 z-40 w-48"> ... </nav> */}
-
       <ColumnsWrapper>
-        <section id="saisie-contexte" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6 text-blue-900">Saisie & contexte</h2>
+        <StepLayout id="contexte" title="Saisie & contexte" icon={<Pen className="w-6 h-6 text-blue-500" />}>
           <div className="w-full flex flex-col gap-6 md:gap-8 mb-8">
             {/* Etape 1 : Découpage en tâches techniques */}
             <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
@@ -762,10 +772,9 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </section>
+        </StepLayout>
 
-        <section id="estimation-ia" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6 text-blue-900">Estimation IA</h2>
+        <StepLayout id="estimation" title="Estimation IA" icon={<Brain className="w-6 h-6 text-purple-500" />}>
           {statusMessage && (
             <StatusMessage
               type={statusMessage.type}
@@ -868,8 +877,10 @@ export default function Home() {
               })()
             )}
           </div>
-          {/* Nouveau bloc timeline (frise) */}
-          <div className="w-full bg-white shadow-sm border border-gray-200 rounded-md p-4 mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-gray-700">
+        </StepLayout>
+
+        <StepLayout id="timeline" title="Livraison" icon={<Calendar className="w-6 h-6 text-green-600" />}>
+          <div className="w-full bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-gray-700">
             {startDate && deliveryDate ? (
               <>
                 <span className="flex items-center gap-1"><span role="img" aria-label="date">📅</span> {startDate}</span>
@@ -901,10 +912,9 @@ export default function Home() {
             }
             return null;
           })()}
-        </section>
+        </StepLayout>
 
-        <section id="conclusion" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6 text-blue-900">Résultat / Conclusion</h2>
+        <StepLayout id="conclusion" title="Conclusion" icon={<CheckCircle className="w-6 h-6 text-green-500" />}>
           <h2 className="text-2xl font-bold mb-2 text-gray-800">Conclusion</h2>
           {(() => {
             // Retirer l'intro et la liste des tâches du texte de conclusion
@@ -919,8 +929,8 @@ export default function Home() {
             // Nettoyer les retours à la ligne multiples
             conclusion = conclusion.replace(/[\n\r]{2,}/g, '\n\n').trim();
             // Supprimer "Cependant" si c'est la première phrase ou après un saut de ligne
-            conclusion = conclusion.replace(/^(\s*)Cependant[,.\s]+/i, '$1');
-            conclusion = conclusion.replace(/([\n\r]+)Cependant[,.\s]+/gi, '$1');
+            conclusion = conclusion.replace(/^(\s*)Cependant[,\.\s]+/i, '$1');
+            conclusion = conclusion.replace(/([\n\r]+)Cependant[,\.\s]+/gi, '$1');
             // Mise en forme
             conclusion = conclusion.replace(/(\d{2}\/\d{2}\/\d{4})/g, '<b class="font-bold">$1</b>');
             conclusion = conclusion.replace(/(\d+\s*jours?)/gi, '<b class="font-bold">$1</b>');
@@ -977,10 +987,9 @@ export default function Home() {
               )}
             </>
           )}
-        </section>
+        </StepLayout>
 
-        <section id="feedback" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6 text-blue-900">Feedback & historique</h2>
+        <StepLayout id="feedback" title="Feedback utilisateur" icon={<MessageCircle className="w-6 h-6 text-yellow-500" />}>
           <div className="pb-6 mb-6 border-b border-gray-200">
             <div className="mb-4 text-gray-700 text-sm">Vos retours aident l'IA à mieux estimer vos futures fonctionnalités.</div>
             <button
@@ -1061,7 +1070,7 @@ export default function Home() {
               </table>
             )}
           </div>
-        </section>
+        </StepLayout>
       </ColumnsWrapper>
 
       {/* Bouton flottant scroll to top */}
