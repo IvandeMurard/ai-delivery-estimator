@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity } = body
+    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies } = body
 
     // Détermine la date de départ à utiliser dans le prompt
     const startDatePrompt = startDate
@@ -28,6 +28,13 @@ export async function POST(request: NextRequest) {
         teamPrompt += `\nCapacité totale de l'équipe : ${totalCapacity}% (somme des % temps de chaque membre). Merci d'en tenir compte pour ajuster la date de livraison.`;
       }
     }
+
+    const priorityPrompt = priority ? `La priorité de la fonctionnalité est : ${priority}.` : "";
+    console.log(priorityPrompt);
+
+    const dependenciesPrompt = dependencies?.length
+      ? `Les dépendances techniques mentionnées sont : ${dependencies.join(", ")}.`
+      : "";
 
     // Lecture des feedbacks et calcul de l'écart moyen
     let feedbackPhrase = '';
@@ -66,6 +73,8 @@ Problématique de données : ${dataConcern}
 ${startDatePrompt}
 ${velocityPrompt}
 ${teamPrompt}
+${priorityPrompt}
+${dependenciesPrompt}
 ${feedbackPhrase}
 
 Découpe la fonctionnalité en tâches techniques avec estimation.

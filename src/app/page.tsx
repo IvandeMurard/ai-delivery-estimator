@@ -10,6 +10,7 @@ import ColumnsWrapper from './components/ColumnsWrapper'
 import Section from './components/Section'
 import StatusMessage from './components/StatusMessage'
 import { fetchWithTimeout } from './lib/fetchWithTimeout'
+import { MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -82,6 +83,11 @@ export default function Home() {
     actionLabel?: string;
     onAction?: () => void;
   } | null>(null)
+  const [thumbVoted, setThumbVoted] = useState<'up' | 'down' | null>(null)
+  const [priority, setPriority] = useState<string>('Moyenne')
+  const [dependencies, setDependencies] = useState<string[]>([])
+  const [dependencyInput, setDependencyInput] = useState('')
+  const [hasSavedProject, setHasSavedProject] = useState(false)
 
   useEffect(() => {
     const onScroll = () => {
@@ -90,6 +96,47 @@ export default function Home() {
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Sauvegarde automatique dans localStorage
+  useEffect(() => {
+    const project = {
+      feature,
+      capacity,
+      startDate,
+      integrationLevel,
+      dataConcern,
+      tasks,
+      priority,
+      dependencies,
+    };
+    localStorage.setItem('lastProject', JSON.stringify(project));
+  }, [feature, capacity, startDate, integrationLevel, dataConcern, tasks, priority, dependencies]);
+
+  // Vérifie la présence d'un projet sauvegardé au mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasSavedProject(!!localStorage.getItem('lastProject'));
+    }
+  }, []);
+
+  const handleRestoreProject = () => {
+    const saved = localStorage.getItem('lastProject');
+    if (!saved) return;
+    try {
+      const project = JSON.parse(saved);
+      setFeature(project.feature || "");
+      setCapacity(project.capacity || 1);
+      setStartDate(project.startDate || "");
+      setIntegrationLevel(project.integrationLevel || "");
+      setDataConcern(project.dataConcern || []);
+      setTasks(project.tasks || []);
+      setPriority(project.priority || 'Moyenne');
+      setDependencies(project.dependencies || []);
+      setStatusMessage({ type: 'success', message: 'Dernier projet rechargé avec succès.' });
+    } catch {
+      setStatusMessage({ type: 'error', message: 'Erreur lors du rechargement du projet.' });
+    }
+  };
 
   const handleScanCodebase = async () => {
     setIsScanning(true)
@@ -132,6 +179,8 @@ export default function Home() {
           githubVelocity,
           team,
           totalCapacity,
+          priority,
+          dependencies,
         })
       }, 15000)
       const data = await response.json()
@@ -141,7 +190,7 @@ export default function Home() {
         setStatusMessage({
           type: 'error',
           message: "Une erreur est survenue lors de l'analyse.",
-          actionLabel: 'Relancer l'analyse',
+          actionLabel: "Relancer l'analyse",
           onAction: handleSubmit
         })
         return
@@ -349,6 +398,17 @@ export default function Home() {
     setStatusMessage({ type: 'info', message: 'Formulaire réinitialisé.' });
   };
 
+  const handleThumb = async (thumb: 'up' | 'down') => {
+    if (thumbVoted) return;
+    await fetch('/api/feedback/thumbs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thumb }),
+    });
+    setThumbVoted(thumb);
+    setStatusMessage({ type: 'success', message: 'Merci pour votre retour !' });
+  };
+
   return (
     <main className="flex flex-col items-center min-h-screen p-8 bg-gray-50">
       <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
@@ -363,6 +423,17 @@ export default function Home() {
                 <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">1</span>
                 <span className="text-lg font-bold text-blue-900">Découper la fonctionnalité en tâches techniques</span>
               </div>
+              {hasSavedProject && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded flex flex-col items-start">
+                  <button
+                    className="bg-yellow-400 text-yellow-900 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-500 transition mb-1"
+                    onClick={handleRestoreProject}
+                  >
+                    Recharger le dernier projet
+                  </button>
+                  <span className="text-xs text-yellow-800">Dernier projet sauvegardé localement</span>
+                </div>
+              )}
               <textarea
                 value={feature}
                 onChange={(e) => setFeature(e.target.value)}
@@ -488,6 +559,47 @@ export default function Home() {
                         {option}
                       </label>
                     ))}
+                  </div>
+                  <label className="block font-semibold mt-2 text-blue-700">Priorité de la fonctionnalité</label>
+                  <select
+                    className="mb-4 text-sm rounded-md border border-gray-300 px-3 py-2 w-full"
+                    value={priority}
+                    onChange={e => setPriority(e.target.value)}
+                  >
+                    <option value="Basse">Basse</option>
+                    <option value="Moyenne">Moyenne</option>
+                    <option value="Haute">Haute</option>
+                  </select>
+                  <label className="block font-semibold mt-2 text-blue-700">Dépendances techniques (facultatif)</label>
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      className="rounded-md border border-gray-300 px-3 py-2 text-sm w-full mb-2"
+                      placeholder="Ajouter une dépendance puis Entrée (ex : authentification, API externe...)"
+                      value={dependencyInput}
+                      onChange={e => setDependencyInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && dependencyInput.trim()) {
+                          e.preventDefault();
+                          if (!dependencies.includes(dependencyInput.trim())) {
+                            setDependencies([...dependencies, dependencyInput.trim()]);
+                          }
+                          setDependencyInput('');
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {dependencies.map((dep, idx) => (
+                        <span key={idx} className="bg-gray-100 text-gray-700 rounded-full px-3 py-1 text-sm inline-flex items-center">
+                          {dep}
+                          <button
+                            type="button"
+                            className="ml-2 text-gray-400 hover:text-red-500"
+                            onClick={() => setDependencies(dependencies.filter((_, i) => i !== idx))}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
@@ -684,7 +796,7 @@ export default function Home() {
           })()}
 
           {/* Bloc 2 : Tâches techniques (tableau bleu) */}
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between">
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[200px] flex flex-col justify-between mb-4">
             <h2 className="text-2xl font-bold text-blue-800 mb-6">Tâches techniques</h2>
             {result === "Analyse en cours..." ? (
               <div className="flex-1 flex items-center justify-center">
@@ -756,7 +868,21 @@ export default function Home() {
               })()
             )}
           </div>
-
+          {/* Nouveau bloc timeline (frise) */}
+          <div className="w-full bg-white shadow-sm border border-gray-200 rounded-md p-4 mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-gray-700">
+            {startDate && deliveryDate ? (
+              <>
+                <span className="flex items-center gap-1"><span role="img" aria-label="date">📅</span> {startDate}</span>
+                <span className="hidden sm:inline">──▶</span>
+                <span className="inline sm:hidden">↓</span>
+                <span className="flex items-center gap-1">{deliveryDate}</span>
+                <span className="text-gray-400">—</span>
+                <span>Durée : {extractTotalDays(result)} jours</span>
+              </>
+            ) : (
+              <span className="text-gray-400">Timeline (à venir)</span>
+            )}
+          </div>
           {/* Bloc 3 : Date de livraison estimée (bloc vert) */}
           {(() => {
             let dateLivraison: string | null = null;
@@ -852,23 +978,59 @@ export default function Home() {
           )}
         </Section>
 
-        <Section id="feedback" title="Feedback utilisateur">
+        <Section id="feedback" title="Feedback & historique">
           <div className="pb-6 mb-6 border-b border-gray-200">
-            <label htmlFor="feedback-comment" className="text-xl font-semibold text-gray-800 mb-2 block">Feedback utilisateur</label>
-            <textarea
-              id="feedback-comment"
-              className="w-full rounded-md border border-gray-300 p-3 text-sm mb-4"
-              placeholder="Votre retour nous aide à améliorer l'estimation…"
-              value={feedbackComment}
-              onChange={e => setFeedbackComment(e.target.value)}
-              rows={3}
-            />
-            <div className="flex gap-2 mt-2">
-              <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onClick={handleSendFeedback}>Envoyer</button>
-              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowFeedback(false)}>Annuler</button>
-            </div>
-            {feedbackSuccess && (
-              <div className="mt-2 text-green-700 font-bold">Merci pour votre feedback !</div>
+            <div className="mb-4 text-gray-700 text-sm">Vos retours aident l'IA à mieux estimer vos futures fonctionnalités.</div>
+            <button
+              className="flex items-center gap-2 bg-yellow-400 text-yellow-900 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-500 transition mb-4"
+              onClick={() => setShowFeedback(true)}
+            >
+              <MessageCircle className="w-5 h-5" />
+              Saisir le feedback post-livraison
+            </button>
+            {showFeedback && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setIsExporting(true);
+                  try {
+                    await handleSendFeedback();
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
+                className="mb-4"
+              >
+                <textarea
+                  className="w-full rounded-md border border-gray-300 p-3 text-sm mb-2"
+                  placeholder="Votre retour nous aide à améliorer l'estimation…"
+                  value={feedbackComment}
+                  onChange={e => setFeedbackComment(e.target.value)}
+                  rows={3}
+                />
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="submit"
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
+                    disabled={isExporting}
+                  >
+                    {isExporting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>}
+                    Envoyer
+                  </button>
+                  {/* Toggle rapide 👍 / 👎 */}
+                  <button type="button" className={`p-2 rounded hover:bg-gray-100 ${thumbVoted === 'up' ? 'bg-green-100' : ''}`} title="Estimation utile" onClick={() => handleThumb('up')} disabled={!!thumbVoted}><ThumbsUp className="w-5 h-5 text-green-600" /></button>
+                  <button type="button" className={`p-2 rounded hover:bg-gray-100 ${thumbVoted === 'down' ? 'bg-red-100' : ''}`} title="Estimation peu utile" onClick={() => handleThumb('down')} disabled={!!thumbVoted}><ThumbsDown className="w-5 h-5 text-red-600" /></button>
+                </div>
+                {/* StatusMessage pour feedback */}
+                {statusMessage && (
+                  <StatusMessage
+                    type={statusMessage.type}
+                    message={statusMessage.message}
+                    onClose={() => setStatusMessage(null)}
+                    timeout={statusMessage.type === 'success' ? 4000 : undefined}
+                  />
+                )}
+              </form>
             )}
           </div>
           <div>
