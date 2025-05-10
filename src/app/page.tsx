@@ -412,17 +412,19 @@ export default function Home() {
       <ColumnsWrapper>
         <Section id="saisie-contexte" title="Saisie & contexte">
           {/* Bloc 1 : Saisie & contexte */}
-          <div className="w-full px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12 overflow-x-auto">
+          <div
+            className="w-full flex flex-col gap-6 md:gap-8 px-2 sm:px-4 md:px-6 lg:px-8 mb-12 min-h-[400px]"
+          >
             {/* Etape 1 : Découpage en tâches techniques */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">1</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">1</span>
                 <span className="text-lg font-bold text-blue-900">Découper la fonctionnalité en tâches techniques</span>
               </div>
               {hasSavedProject && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded flex flex-col items-start">
+                <div className="mb-4 mt-2 flex flex-col items-start">
                   <button
-                    className="bg-yellow-400 text-yellow-900 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-500 transition mb-1"
+                    className="mt-2 mb-4 text-sm rounded shadow-sm bg-yellow-400 text-yellow-900 font-semibold px-4 py-2 hover:bg-yellow-500 transition"
                     onClick={handleRestoreProject}
                   >
                     Recharger le dernier projet
@@ -492,9 +494,9 @@ export default function Home() {
               )}
             </div>
             {/* Etape 2 : Date de démarrage */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">2</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">2</span>
                 <span className="text-lg font-bold text-blue-900">Date de démarrage</span>
               </div>
               <label className="block font-semibold mt-2 text-gray-900">📅 Date de démarrage</label>
@@ -506,9 +508,9 @@ export default function Home() {
               />
             </div>
             {/* Etape 3 : Champs avancés (facultatif) */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">3</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">3</span>
                 <span className="text-lg font-bold text-blue-900">Champs avancés <span className="text-xs text-blue-500">(facultatif)</span></span>
               </div>
               <button
@@ -519,7 +521,7 @@ export default function Home() {
                 {showAdvancedFields ? "Masquer les champs avancés" : "Afficher les champs avancés"}
               </button>
               {showAdvancedFields && (
-                <>
+                <Fragment>
                   <label className="block font-semibold mt-2 text-blue-700">🔄 Niveau d'intégration SI</label>
                   <select
                     className="w-full p-2 border border-gray-300 rounded mb-2 text-gray-900"
@@ -597,13 +599,13 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                </>
+                </Fragment>
               )}
             </div>
             {/* Etape 4 : Connexion GitHub (facultatif) */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">4</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">4</span>
                 <span className="text-lg font-bold text-blue-900">Connexion GitHub <span className='text-xs text-blue-500'>(facultatif)</span></span>
               </div>
               <div className="flex gap-2 items-end">
@@ -646,9 +648,9 @@ export default function Home() {
               </div>
             </div>
             {/* Etape 5 : Connexion Notion (facultatif) */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">5</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">5</span>
                 <span className="text-lg font-bold text-blue-900">Connexion Notion <span className='text-xs text-blue-500'>(facultatif)</span></span>
               </div>
               <div className="flex gap-2 items-end">
@@ -679,9 +681,9 @@ export default function Home() {
               </div>
             </div>
             {/* Etape 6 : Analyse du code existant (facultatif) */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">6</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">6</span>
                 <span className="text-lg font-bold text-blue-900">Analyser le code existant <span className='text-xs text-blue-500'>(facultatif)</span></span>
               </div>
               <button
@@ -704,9 +706,9 @@ export default function Home() {
               )}
             </div>
             {/* Etape 7 : Capacité équipe */}
-            <div className="mb-4 pb-4 border-b border-blue-100">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">7</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">7</span>
                 <span className="text-lg font-bold text-blue-900">Prendre en compte la capacité de l'équipe</span>
               </div>
               <button
@@ -745,9 +747,9 @@ export default function Home() {
               )}
             </div>
             {/* Etape 8 */}
-            <div className="mb-2">
+            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-blue-50 mb-2">
               <div className="flex items-center gap-2 mb-2">
-                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold">8</span>
+                <span className="bg-blue-700 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold relative z-10">8</span>
                 <span className="text-lg font-bold text-blue-900">Valider et estimer</span>
               </div>
               <button
