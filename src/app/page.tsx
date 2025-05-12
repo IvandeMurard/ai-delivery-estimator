@@ -6,7 +6,7 @@ export default function Home() {
   const [feature, setFeature] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState("");
-  const [tasks, setTasks] = useState<string[]>([]);
+  const [tasks, setTasks] = useState<{ name: string; days: number }[]>([]);
 
   const handleAnalyze = async () => {
     if (!feature) return;
@@ -21,12 +21,12 @@ export default function Home() {
       });
       const data = await res.json();
       setResult(data.output || "");
-      // Extraction robuste des tâches : capture le nom avant le ':'
+      // Extraction robuste des tâches : capture le nom et le nombre de jours
       const lines = (data.output || "").split(/\n|\r/);
       const taskLines = lines.filter((l: string) => /^\s*(\d+\.|-)\s*[^:]+:/i.test(l));
       setTasks(taskLines.map((l: string) => {
-        const match = l.match(/^\s*(?:\d+\.|-)\s*([^:]+):/i);
-        return match ? match[1].trim() : l.trim();
+        const match = l.match(/^\s*(?:\d+\.|-)\s*([^:]+):\s*(\d+)\s*jours?/i);
+        return match ? { name: match[1].trim(), days: parseInt(match[2], 10) } : { name: l.trim(), days: 0 };
       }));
     } catch {
       setResult("Erreur lors de l'analyse IA");
@@ -82,13 +82,32 @@ export default function Home() {
           <div className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label className="font-medium">Tâches proposées</label>
-              <ul className="list-disc pl-6 text-gray-700">
-                {tasks.length === 0 ? (
-                  <li className="text-gray-400">Aucune tâche proposée pour l'instant</li>
-                ) : (
-                  tasks.map((t, i) => <li key={i}>{t}</li>)
-                )}
-              </ul>
+              {tasks.length === 0 ? (
+                <div className="text-gray-400">Aucune tâche proposée pour l'instant</div>
+              ) : (
+                <table className="w-full border text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border px-2 py-1 text-left">Tâche technique</th>
+                      <th className="border px-2 py-1 text-left">Nombre de jours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map((t, i) => (
+                      <tr key={i}>
+                        <td className="border px-2 py-1">{t.name}</td>
+                        <td className="border px-2 py-1">{t.days > 0 ? t.days : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="font-bold bg-gray-100">
+                      <td className="border px-2 py-1 text-right">Total</td>
+                      <td className="border px-2 py-1">{tasks.reduce((sum, t) => sum + (t.days || 0), 0)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
             </div>
             <button
               className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded ${tasks.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
