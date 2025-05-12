@@ -21,9 +21,13 @@ export default function Home() {
       });
       const data = await res.json();
       setResult(data.output || "");
-      // Extraction simple des tâches (à affiner plus tard)
-      const matches = data.output.match(/(?:\d+\.|-)\s*([^:]+):/g) || [];
-      setTasks(matches.map((m: string) => m.replace(/(?:\d+\.|-)\s*|:/g, "").trim()));
+      // Extraction robuste des tâches : capture le nom avant le ':'
+      const lines = (data.output || "").split(/\n|\r/);
+      const taskLines = lines.filter(l => /^\s*(\d+\.|-)\s*[^:]+:/i.test(l));
+      setTasks(taskLines.map(l => {
+        const match = l.match(/^\s*(?:\d+\.|-)\s*([^:]+):/i);
+        return match ? match[1].trim() : l.trim();
+      }));
     } catch {
       setResult("Erreur lors de l'analyse IA");
     }
