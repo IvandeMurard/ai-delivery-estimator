@@ -81,6 +81,24 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Bloc Exports */}
+        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
+          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+            {/* <CheckCircle className="w-6 h-6 text-blue-500" /> */}
+            Exports
+          </h2>
+          <div className="w-full flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>📤 Export PDF</button>
+              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🧠 Export Notion</button>
+              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>📋 Export CSV</button>
+              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>✅ Export Trello</button>
+              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🟠 Export JIRA</button>
+            </div>
+            <div className="mt-2 text-gray-500 text-xs">Exports désactivés (structure uniquement)</div>
+          </div>
+        </section>
       </div>
     </main>
   );
