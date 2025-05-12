@@ -1,37 +1,33 @@
-'use client'
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Fragment } from "react"
-import { PDFDownloadLink } from '@react-pdf/renderer'
-import { EstimationPDF } from './components/EstimationPDF'
-import { ConclusionPDF } from './components/ConclusionPDF'
-import Loader from './components/Loader'
-import ColumnsWrapper from './components/ColumnsWrapper'
-import Section from './components/Section'
-import StatusMessage from './components/StatusMessage'
-import { fetchWithTimeout } from './lib/fetchWithTimeout'
-import { MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
-import StepLayout from './components/StepLayout'
-import StepNav from './components/StepNav'
-import { Pen, Brain, Calendar, CheckCircle } from 'lucide-react'
-import ExportCenter from './components/ExportCenter'
+import { useState, useRef, useEffect, Fragment } from "react";
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { EstimationPDF } from './components/EstimationPDF';
+import { ConclusionPDF } from './components/ConclusionPDF';
+import Loader from './components/Loader';
+import ColumnsWrapper from './components/ColumnsWrapper';
+import Section from './components/Section';
+import StatusMessage from './components/StatusMessage';
+import { fetchWithTimeout } from './lib/fetchWithTimeout';
+import { MessageCircle, ThumbsUp, ThumbsDown, Pen, Brain, Calendar, CheckCircle } from 'lucide-react';
+import StepLayout from './components/StepLayout';
+import StepNav from './components/StepNav';
+import ExportCenter from './components/ExportCenter';
 
 function extractTotalDays(response: string): number {
-  const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
-  if (!match) return 1 // fallback
-  return parseFloat(match[1].replace(',', '.'))
+  const match = response.match(/total.*?(\d+([.,]\d+)?)/i);
+  if (!match) return 1;
+  return parseFloat(match[1].replace(',', '.'));
 }
 
 function extractDeliveryDate(response: string): string | null {
-  // Cherche la date au format 'Livraison estimée : jj/mm/aaaa'
-  const match = response.match(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/i)
-  return match ? match[1] : null
+  const match = response.match(/Livraison estimée\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
+  return match ? match[1] : null;
 }
 
 function extractAdvancedSection(response: string): string | null {
-  // Cherche la section 'Calculs secondaires' (ou autre nice to have)
-  const match = response.match(/(Calculs secondaires[\s\S]*)/i)
-  return match ? match[1].trim() : null
+  const match = response.match(/(Calculs secondaires[\s\S]*)/i);
+  return match ? match[1].trim() : null;
 }
 
 const steps = [
@@ -44,63 +40,51 @@ const steps = [
 ];
 
 export default function Home() {
-  const [feature, setFeature] = useState("")
-  const [result, setResult] = useState("")
-  const [capacity, setCapacity] = useState(1)
-  const [integrationLevel, setIntegrationLevel] = useState("")
-  const [dataConcern, setDataConcern] = useState<string[]>([])
-  const [startDate, setStartDate] = useState("")
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [showAdvancedFields, setShowAdvancedFields] = useState(false)
-  const capacityInputRef = useRef<HTMLInputElement>(null)
-  // Pour le workflow de suggestion/validation des tâches
-  const [suggestedTasks, setSuggestedTasks] = useState<string[] | null>(null)
-  const [tasks, setTasks] = useState<string[]>([])
-  const [isSuggesting, setIsSuggesting] = useState(false)
-  const [isEditingTasks, setIsEditingTasks] = useState(false)
-  // Pour le scan du codebase
-  const [codebaseStructure, setCodebaseStructure] = useState<string[] | null>(null)
-  const [isScanning, setIsScanning] = useState(false)
-  // Pour GitHub OAuth et vélocité
-  const [githubConnected, setGithubConnected] = useState(false)
-  const [githubVelocity, setGithubVelocity] = useState<{ avgPerWeek: number, avgDuration: number } | null>(null)
-  const [githubIssues, setGithubIssues] = useState<any[]>([])
-  // Gestion des erreurs utilisateur
-  const [error, setError] = useState<string | null>(null)
-  // Pour le choix du repo
-  const [githubOwner, setGithubOwner] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_OWNER || '')
-  const [githubRepo, setGithubRepo] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_REPO || '')
-  // Pour la gestion de la capacité de l'équipe
-  const [showCapacity, setShowCapacity] = useState(false)
-  const [team, setTeam] = useState<{ name: string, percent: number, comment: string }[]>([])
-  // Capacité totale calculée
-  const totalCapacity = team.reduce((sum, m) => sum + (Number(m.percent) || 0), 0)
-  // Feedback post-livraison
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackEstimation, setFeedbackEstimation] = useState("")
-  const [feedbackReal, setFeedbackReal] = useState("")
-  const [feedbackComment, setFeedbackComment] = useState("")
-  const [feedbackSuccess, setFeedbackSuccess] = useState(false)
-  // Historique des feedbacks
-  const [feedbackHistory, setFeedbackHistory] = useState<any[]>([])
-  // Pour le bouton scroll to top
-  const [showScrollTop, setShowScrollTop] = useState(false)
-  // Pour la connexion Notion
-  const [notionConnected, setNotionConnected] = useState(false)
-  const [notionDatabaseId, setNotionDatabaseId] = useState("")
-  const [isExporting, setIsExporting] = useState(false)
-  // Ajout de l'état global statusMessage
+  const [feature, setFeature] = useState("");
+  const [result, setResult] = useState("");
+  const [capacity, setCapacity] = useState(1);
+  const [integrationLevel, setIntegrationLevel] = useState("");
+  const [dataConcern, setDataConcern] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+  const capacityInputRef = useRef<HTMLInputElement>(null);
+  const [suggestedTasks, setSuggestedTasks] = useState<string[] | null>(null);
+  const [tasks, setTasks] = useState<string[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isEditingTasks, setIsEditingTasks] = useState(false);
+  const [codebaseStructure, setCodebaseStructure] = useState<string[] | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [githubVelocity, setGithubVelocity] = useState<{ avgPerWeek: number, avgDuration: number } | null>(null);
+  const [githubIssues, setGithubIssues] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [githubOwner, setGithubOwner] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_OWNER || '');
+  const [githubRepo, setGithubRepo] = useState<string>(process.env.NEXT_PUBLIC_GITHUB_REPO || '');
+  const [showCapacity, setShowCapacity] = useState(false);
+  const [team, setTeam] = useState<{ name: string, percent: number, comment: string }[]>([]);
+  const totalCapacity = team.reduce((sum, m) => sum + (Number(m.percent) || 0), 0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackEstimation, setFeedbackEstimation] = useState("");
+  const [feedbackReal, setFeedbackReal] = useState("");
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackHistory, setFeedbackHistory] = useState<any[]>([]);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [notionConnected, setNotionConnected] = useState(false);
+  const [notionDatabaseId, setNotionDatabaseId] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
     actionLabel?: string;
     onAction?: () => void;
-  } | null>(null)
-  const [thumbVoted, setThumbVoted] = useState<'up' | 'down' | null>(null)
-  const [priority, setPriority] = useState<string>('Moyenne')
-  const [dependencies, setDependencies] = useState<string[]>([])
-  const [dependencyInput, setDependencyInput] = useState('')
-  const [hasSavedProject, setHasSavedProject] = useState(false)
+  } | null>(null);
+  const [thumbVoted, setThumbVoted] = useState<'up' | 'down' | null>(null);
+  const [priority, setPriority] = useState<string>('Moyenne');
+  const [dependencies, setDependencies] = useState<string[]>([]);
+  const [dependencyInput, setDependencyInput] = useState('');
+  const [hasSavedProject, setHasSavedProject] = useState(false);
   const [nps, setNps] = useState<number | null>(null);
   const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
   const [trelloListUrl, setTrelloListUrl] = useState<string>("");
@@ -1255,7 +1239,7 @@ export default function Home() {
         </button>
       )}
 
-      {/* Bouton sticky en bas de la page (hors <main>) */}
+      {/* Bouton sticky en bas de la page */}
       <button
         onClick={handleReset}
         className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-gray-200 text-gray-700 px-6 py-3 rounded-full shadow-lg font-semibold hover:bg-gray-300 transition"
@@ -1263,5 +1247,5 @@ export default function Home() {
         Réinitialiser
       </button>
     </main>
-  )
+  );
 }
