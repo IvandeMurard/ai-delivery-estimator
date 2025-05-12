@@ -1,5 +1,5 @@
 import { useState } from "react";
-import StatusMessage from "../StatusMessage";
+import StatusMessage from "./StatusMessage";
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { EstimationPDF } from "./EstimationPDF";
 
