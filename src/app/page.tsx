@@ -1230,44 +1230,15 @@ export default function Home() {
               jiraProjectKey={jiraProjectKey}
             />
           </div>
-                {/* StatusMessage pour feedback */}
-                {statusMessage && (
-                  <StatusMessage
-                    type={statusMessage.type}
-                    message={statusMessage.message}
-                    onClose={() => setStatusMessage(null)}
-                    timeout={statusMessage.type === 'success' ? 4000 : undefined}
-                  />
-                )}
-              </form>
-            )}
-          </div>
-          <div>
-            <div className="font-bold text-gray-800 mb-2">Historique des feedbacks</div>
-            {feedbackHistory.length === 0 && <div className="text-gray-500 text-sm">Aucun feedback enregistré pour l'instant.</div>}
-            {feedbackHistory.length > 0 && (
-              <table className="w-full text-xs border border-gray-200 rounded">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="p-2 text-left">Date</th>
-                    <th className="p-2 text-left">Feature</th>
-                    <th className="p-2 text-left">NPS</th>
-                    <th className="p-2 text-left">Commentaire</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {feedbackHistory.map((f, idx) => (
-                    <tr key={idx} className="border-t border-gray-100">
-                      <td className="p-2">{new Date(f.date).toLocaleDateString()}</td>
-                      <td className="p-2">{f.feature || '—'}</td>
-                      <td className="p-2 font-bold text-blue-700">{typeof f.nps === 'number' ? f.nps : '—'}</td>
-                      <td className="p-2">{f.comment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          {/* StatusMessage pour feedback */}
+          {statusMessage && (
+            <StatusMessage
+              type={statusMessage.type}
+              message={statusMessage.message}
+              onClose={() => setStatusMessage(null)}
+              timeout={statusMessage.type === 'success' ? 4000 : undefined}
+            />
+          )}
         </StepLayout>
       </ColumnsWrapper>
 
