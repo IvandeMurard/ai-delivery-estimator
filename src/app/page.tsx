@@ -7,6 +7,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState("");
   const [tasks, setTasks] = useState<{ name: string; days: number }[]>([]);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  const [deliveryDate, setDeliveryDate] = useState<string>("");
 
   const handleAnalyze = async () => {
     if (!feature) return;
@@ -21,6 +23,10 @@ export default function Home() {
       });
       const data = await res.json();
       setResult(data.output || "");
+      setConfidenceScore(typeof data.confidenceScore === 'number' ? data.confidenceScore : null);
+      // Extraction de la date de livraison estimée (ex: 'Date de livraison estimée : 12/07/2024')
+      const dateMatch = (data.output || "").match(/date de livraison estimée\s*[:\-–]?\s*([\w\d\/\-]+)/i);
+      setDeliveryDate(dateMatch ? dateMatch[1] : "");
       // Extraction robuste des tâches : capture le nom et le nombre de jours
       const lines = (data.output || "").split(/\n|\r/);
       const taskLines = lines.filter((l: string) => /^\s*(\d+\.|-)\s*[^:]+:/i.test(l));
@@ -128,9 +134,9 @@ export default function Home() {
           <div className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label className="font-medium">Estimation finale</label>
-              <div className="text-gray-700">Date de livraison estimée : <span className="font-bold">--/--/----</span></div>
+              <div className="text-gray-700">Date de livraison estimée : <span className="font-bold">{deliveryDate || '--/--/----'}</span></div>
               <div className="flex items-center gap-2 mt-2">
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">Score de confiance : <span className="font-bold">--</span></span>
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">Score de confiance : <span className="font-bold">{confidenceScore !== null ? confidenceScore : '--'}</span></span>
               </div>
             </div>
           </div>
