@@ -13,6 +13,7 @@ export default function Home() {
   const [npsComment, setNpsComment] = useState("");
   const [npsLoading, setNpsLoading] = useState(false);
   const [npsHistory, setNpsHistory] = useState<{ nps: string; comment: string; date: string }[]>([]);
+  const [exportStatus, setExportStatus] = useState<string>("");
 
   const handleAnalyze = async () => {
     if (!feature) return;
@@ -64,6 +65,22 @@ export default function Home() {
     } finally {
       setNpsLoading(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    if (!tasks.length) return;
+    const csv = [
+      ['Tâche', 'Jours'],
+      ...tasks.map(t => [t.name, t.days > 0 ? t.days : ''])
+    ].map(row => row.join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'estimation.csv';
+    a.click();
+    setExportStatus('Export CSV téléchargé ✅');
+    setTimeout(() => setExportStatus(''), 3000);
   };
 
   return (
@@ -223,13 +240,20 @@ export default function Home() {
           </h2>
           <div className="w-full flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
+              <button
+                className={`bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center ${!tasks.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!tasks.length}
+                onClick={handleExportCSV}
+              >
+                📋 Export CSV
+              </button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>📤 Export PDF</button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🧠 Export Notion</button>
-              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>📋 Export CSV</button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>✅ Export Trello</button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🟠 Export JIRA</button>
             </div>
-            <div className="mt-2 text-gray-500 text-xs">Exports désactivés (structure uniquement)</div>
+            {exportStatus && <div className="mt-2 text-green-600 text-sm">{exportStatus}</div>}
+            <div className="mt-2 text-gray-500 text-xs">Seul l'export CSV est actif pour l'instant</div>
           </div>
         </section>
       </div>
