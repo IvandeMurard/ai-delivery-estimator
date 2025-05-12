@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import jsPDF from "jspdf";
 
 export default function Home() {
   const [feature, setFeature] = useState("");
@@ -80,6 +81,23 @@ export default function Home() {
     a.download = 'estimation.csv';
     a.click();
     setExportStatus('Export CSV téléchargé ✅');
+    setTimeout(() => setExportStatus(''), 3000);
+  };
+
+  const handleExportPDF = () => {
+    if (!tasks.length) return;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Estimation IA - Tâches techniques", 10, 15);
+    doc.setFontSize(12);
+    let y = 30;
+    tasks.forEach((t, i) => {
+      doc.text(`${i + 1}. ${t.name} : ${t.days > 0 ? t.days + ' jours' : '-'}`, 10, y);
+      y += 8;
+    });
+    doc.text(`Total : ${tasks.reduce((sum, t) => sum + (t.days || 0), 0)} jours`, 10, y + 5);
+    doc.save("estimation.pdf");
+    setExportStatus('Export PDF téléchargé ✅');
     setTimeout(() => setExportStatus(''), 3000);
   };
 
@@ -247,7 +265,13 @@ export default function Home() {
               >
                 📋 Export CSV
               </button>
-              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>📤 Export PDF</button>
+              <button
+                className={`bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center ${!tasks.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!tasks.length}
+                onClick={handleExportPDF}
+              >
+                📤 Export PDF
+              </button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🧠 Export Notion</button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>✅ Export Trello</button>
               <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🟠 Export JIRA</button>
