@@ -56,6 +56,31 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Bloc Feedback NPS */}
+        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
+          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+            {/* <ThumbsUp className="w-6 h-6 text-blue-500" /> */}
+            Feedback NPS
+          </h2>
+          <div className="w-full flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="font-medium">Votre avis sur l'estimation</label>
+              <div className="flex items-center gap-2 mt-2">
+                <input type="number" min="0" max="10" className="border rounded p-2 w-16" placeholder="NPS" disabled />
+                <input type="text" className="border rounded p-2 flex-1" placeholder="Commentaire (optionnel)" disabled />
+                <button className="bg-blue-600 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" disabled>Envoyer</button>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="font-medium">Historique des feedbacks</label>
+              <ul className="list-disc pl-6 text-gray-700">
+                <li>Exemple de feedback 1</li>
+                <li>Exemple de feedback 2</li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
