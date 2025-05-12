@@ -30,6 +30,11 @@ export default function Home() {
     setIsLoading(false);
   };
 
+  const handleEstimate = () => {
+    // Placeholder : pour l'instant, ne fait rien de plus
+    // On pourra y ajouter la logique d'estimation détaillée plus tard
+  };
+
   return (
     <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
       {/* StepNav : sticky top sur mobile, fixed sur desktop */}
@@ -74,11 +79,20 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               <label className="font-medium">Tâches proposées</label>
               <ul className="list-disc pl-6 text-gray-700">
-                <li>Exemple de tâche 1</li>
-                <li>Exemple de tâche 2</li>
+                {tasks.length === 0 ? (
+                  <li className="text-gray-400">Aucune tâche proposée pour l'instant</li>
+                ) : (
+                  tasks.map((t, i) => <li key={i}>{t}</li>)
+                )}
               </ul>
             </div>
-            <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" disabled>Générer estimation</button>
+            <button
+              className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded ${tasks.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={tasks.length === 0}
+              onClick={handleEstimate}
+            >
+              Générer estimation
+            </button>
           </div>
         </section>
 
