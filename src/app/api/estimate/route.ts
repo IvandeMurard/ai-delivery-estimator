@@ -101,7 +101,38 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     const data = await openaiRes.json()
     const output = data.choices?.[0]?.message?.content || "Erreur dans la réponse."
 
-    return NextResponse.json({ output })
+    // Analyse du texte pour scoring automatique
+    // Extraction des tâches et durées (ex: "1. Tâche : 3 jours")
+    const taskMatches = output.match(/(?:\d+\.|-)\s*[^:]+:\s*(\d+)\s*jours?/gi) || [];
+    const durations = taskMatches.map(m => {
+      const d = m.match(/(\d+)\s*jours?/);
+      return d ? parseInt(d[1], 10) : null;
+    }).filter(Boolean);
+    const nbTasks = durations.length;
+    let confidenceScore = 70;
+    if (nbTasks >= 5) {
+      // Score élevé si >5 tâches et durées équilibrées
+      const min = Math.min(...durations);
+      const max = Math.max(...durations);
+      const ratio = min / max;
+      if (ratio > 0.5) confidenceScore = 95;
+      else confidenceScore = 90;
+    } else if (nbTasks >= 3) {
+      confidenceScore = 80;
+    } else if (nbTasks > 0) {
+      confidenceScore = 60;
+    } else {
+      confidenceScore = 50;
+    }
+    // Ajustement si gros écart de durée
+    if (durations.length > 1) {
+      const min = Math.min(...durations);
+      const max = Math.max(...durations);
+      if (max > 2 * min) confidenceScore -= 10;
+    }
+    confidenceScore = Math.max(30, Math.min(100, confidenceScore));
+
+    return NextResponse.json({ output, confidenceScore })
   } catch (error) {
     return NextResponse.json(
       { error: 'Invalid request' },

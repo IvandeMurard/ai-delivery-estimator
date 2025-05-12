@@ -5,16 +5,16 @@ import path from 'path';
 const FEEDBACK_PATH = path.join(process.cwd(), 'feedbacks.json');
 
 export async function POST(req: NextRequest) {
-  const { estimation, realDuration, comment, date = new Date().toISOString() } = await req.json();
-  if (!estimation || !realDuration) {
-    return NextResponse.json({ error: 'estimation et realDuration requis' }, { status: 400 });
+  const { feature, nps, comment, date } = await req.json();
+  if (!feature || typeof nps !== 'number') {
+    return NextResponse.json({ error: 'feature et nps requis' }, { status: 400 });
   }
   let feedbacks: any[] = [];
   try {
     const content = await fs.readFile(FEEDBACK_PATH, 'utf-8');
     feedbacks = JSON.parse(content);
   } catch {}
-  feedbacks.push({ estimation, realDuration, comment, date });
+  feedbacks.push({ feature, nps, comment, date: date || new Date().toISOString() });
   await fs.writeFile(FEEDBACK_PATH, JSON.stringify(feedbacks, null, 2), 'utf-8');
   return NextResponse.json({ success: true });
 }

@@ -14,6 +14,7 @@ import { MessageCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
 import StepLayout from './components/StepLayout'
 import StepNav from './components/StepNav'
 import { Pen, Brain, Calendar, CheckCircle } from 'lucide-react'
+import ExportCenter from './components/ExportCenter'
 
 function extractTotalDays(response: string): number {
   const match = response.match(/total.*?(\d+([.,]\d+)?)/i)
@@ -38,6 +39,7 @@ const steps = [
   { id: 'estimation', label: 'Estimation IA', icon: <Brain className="w-5 h-5" /> },
   { id: 'timeline', label: 'Livraison', icon: <Calendar className="w-5 h-5" /> },
   { id: 'conclusion', label: 'Conclusion', icon: <CheckCircle className="w-5 h-5" /> },
+  { id: 'exports', label: 'Exports', icon: <CheckCircle className="w-5 h-5 text-blue-500" /> },
   { id: 'feedback', label: 'Feedback', icon: <MessageCircle className="w-5 h-5" /> },
 ];
 
@@ -99,6 +101,13 @@ export default function Home() {
   const [dependencies, setDependencies] = useState<string[]>([])
   const [dependencyInput, setDependencyInput] = useState('')
   const [hasSavedProject, setHasSavedProject] = useState(false)
+  const [nps, setNps] = useState<number | null>(null);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  const [trelloListUrl, setTrelloListUrl] = useState<string>("");
+  const [trelloListId, setTrelloListId] = useState<string>("");
+  const [jiraBaseUrl, setJiraBaseUrl] = useState<string>("");
+  const [jiraProjectKey, setJiraProjectKey] = useState<string>("");
+  const [jiraExportResult, setJiraExportResult] = useState<{ tickets: { key: string, url: string }[] } | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -174,6 +183,7 @@ export default function Home() {
     setShowAdvanced(false)
     setError(null)
     setStatusMessage(null)
+    setConfidenceScore(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
     try {
       const response = await fetchWithTimeout("/api/estimate", {
@@ -207,6 +217,7 @@ export default function Home() {
         return
       }
       setResult(data.output)
+      setConfidenceScore(typeof data.confidenceScore === 'number' ? data.confidenceScore : null)
       setStatusMessage({ type: 'success', message: "Estimation complétée avec succès ✅" })
     } catch (err: any) {
       setError(err.message)
@@ -310,15 +321,30 @@ export default function Home() {
   }, [githubOwner, githubRepo])
 
   const handleSendFeedback = async () => {
-    setFeedbackSuccess(false)
-    const res = await fetchWithTimeout('/api/feedback', {}, 15000)
-    const data = await res.json()
+    setFeedbackSuccess(false);
+    setStatusMessage(null);
+    if (!feature || nps === null) {
+      setStatusMessage({ type: 'error', message: 'Merci de sélectionner la fonctionnalité et une note NPS.' });
+      return;
+    }
+    const res = await fetchWithTimeout('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        feature,
+        nps,
+        comment: feedbackComment,
+        date: new Date().toISOString(),
+      })
+    }, 15000);
+    const data = await res.json();
     if (data.success) {
-      setFeedbackSuccess(true)
-      setShowFeedback(false)
-      setFeedbackEstimation("")
-      setFeedbackReal("")
-      setFeedbackComment("")
+      setFeedbackSuccess(true);
+      setShowFeedback(false);
+      setFeedbackComment("");
+      setNps(null);
+    } else {
+      setStatusMessage({ type: 'error', message: data.error || 'Erreur lors de l\'envoi du feedback.' });
     }
   }
 
@@ -368,6 +394,111 @@ export default function Home() {
     setIsExporting(false)
   }
 
+  const extractListIdFromUrl = (url: string) => {
+    // Ex: https://trello.com/c/xxxxxx/board-name/l/IDLIST
+    // Ou https://trello.com/b/xxxxxx/board-name?menu=filter&filter=IDLIST
+    // Mais le plus fiable : https://trello.com/b/BOARDID/BOARDNAME/l/LISTID
+    const match = url.match(/\/l\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : '';
+  };
+
+  const handleExportToTrello = async () => {
+    setIsExporting(true);
+    setStatusMessage(null);
+    // Extraction de l'ID de liste
+    const listId = trelloListId || extractListIdFromUrl(trelloListUrl);
+    if (!listId) {
+      setStatusMessage({ type: 'error', message: "Merci de coller l'URL de la liste Trello cible." });
+      setIsExporting(false);
+      return;
+    }
+    localStorage.setItem('trelloListUrl', trelloListUrl);
+    localStorage.setItem('trelloListId', listId);
+    try {
+      // Extraction des tâches IA (nom + estimation)
+      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
+      const dateLivraison = (() => {
+        const dateMatches = Array.from(result.matchAll(/\d{2}\/\d{2}\/\d{4}/g));
+        return dateMatches.length > 0 ? dateMatches[dateMatches.length - 1][0] : '';
+      })();
+      const tasksToExport = taskLines.map(l => {
+        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+        return {
+          name: match ? match[1].trim() : l,
+          duration: match ? match[2] : '—',
+          deliveryDate: dateLivraison,
+        };
+      });
+      if (tasksToExport.length === 0) {
+        setStatusMessage({ type: 'error', message: "Aucune tâche IA à exporter." });
+        setIsExporting(false);
+        return;
+      }
+      const res = await fetch('/api/trello/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: tasksToExport, listId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ type: 'success', message: "Tâches exportées vers Trello ✅" });
+      } else {
+        setStatusMessage({ type: 'error', message: data.error || "Échec de l'export. Vérifiez vos identifiants." });
+      }
+    } catch (e) {
+      setStatusMessage({ type: 'error', message: "Échec de l'export. Vérifiez vos identifiants." });
+    }
+    setIsExporting(false);
+  };
+
+  const handleExportToJira = async () => {
+    setIsExporting(true);
+    setStatusMessage(null);
+    setJiraExportResult(null);
+    if (!jiraBaseUrl || !jiraProjectKey) {
+      setStatusMessage({ type: 'error', message: "Merci de renseigner l'URL de l'instance JIRA et la clé du projet." });
+      setIsExporting(false);
+      return;
+    }
+    localStorage.setItem('jiraBaseUrl', jiraBaseUrl);
+    localStorage.setItem('jiraProjectKey', jiraProjectKey);
+    try {
+      const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
+      const dateLivraison = (() => {
+        const dateMatches = Array.from(result.matchAll(/\d{2}\/\d{2}\/\d{4}/g));
+        return dateMatches.length > 0 ? dateMatches[dateMatches.length - 1][0] : '';
+      })();
+      const tasksToExport = taskLines.map(l => {
+        const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+        return {
+          name: match ? match[1].trim() : l,
+          duration: match ? match[2] : '—',
+          deliveryDate: dateLivraison,
+        };
+      });
+      if (tasksToExport.length === 0) {
+        setStatusMessage({ type: 'error', message: "Aucune tâche IA à exporter." });
+        setIsExporting(false);
+        return;
+      }
+      const res = await fetch('/api/jira/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: tasksToExport, jiraBaseUrl, jiraProjectKey })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatusMessage({ type: 'success', message: "Tâches exportées vers JIRA ✅" });
+        setJiraExportResult({ tickets: data.tickets });
+      } else {
+        setStatusMessage({ type: 'error', message: data.error || "Échec de l'export JIRA." });
+      }
+    } catch (e) {
+      setStatusMessage({ type: 'error', message: "Échec de l'export JIRA." });
+    }
+    setIsExporting(false);
+  };
+
   // Fonction de reset global
   const handleReset = () => {
     if (!window.confirm('Êtes-vous sûr de vouloir tout réinitialiser ?')) return;
@@ -416,11 +547,23 @@ export default function Home() {
     setStatusMessage({ type: 'success', message: 'Merci pour votre retour !' });
   };
 
+  useEffect(() => {
+    // Pré-remplir depuis localStorage si dispo
+    const saved = localStorage.getItem('trelloListUrl');
+    if (saved) setTrelloListUrl(saved);
+    const savedId = localStorage.getItem('trelloListId');
+    if (savedId) setTrelloListId(savedId);
+    const savedUrl = localStorage.getItem('jiraBaseUrl');
+    if (savedUrl) setJiraBaseUrl(savedUrl);
+    const savedKey = localStorage.getItem('jiraProjectKey');
+    if (savedKey) setJiraProjectKey(savedKey);
+  }, []);
+
   return (
     <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
       {/* StepNav : sticky top sur mobile, fixed sur desktop */}
       <StepNav steps={steps} />
-      <h1 className="text-4xl font-extrabold mb-12 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
+      <h1 className="text-4xl font-extrabold mb-4 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
 
       <ColumnsWrapper>
         <StepLayout id="contexte" title="Saisie & contexte" icon={<Pen className="w-6 h-6 text-blue-500" />}>
@@ -876,6 +1019,62 @@ export default function Home() {
               })()
             )}
           </div>
+          {/* Bouton Export Trello */}
+          <div className="flex flex-col sm:flex-row gap-2 items-center mb-4">
+            <input
+              type="text"
+              className="border rounded px-3 py-2 text-sm w-full sm:w-96"
+              placeholder="Coller l'URL de la liste Trello"
+              value={trelloListUrl}
+              onChange={e => {
+                setTrelloListUrl(e.target.value);
+                const id = extractListIdFromUrl(e.target.value);
+                setTrelloListId(id);
+              }}
+            />
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2 shadow"
+              onClick={handleExportToTrello}
+              disabled={isExporting || result === "Analyse en cours..."}
+            >
+              {isExporting ? "Export en cours..." : "Exporter vers Trello"}
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 items-center mb-4">
+            <input
+              type="text"
+              className="border rounded px-3 py-2 text-sm w-full sm:w-96"
+              placeholder="URL de l'instance JIRA (ex: https://votreinstance.atlassian.net)"
+              value={jiraBaseUrl}
+              onChange={e => setJiraBaseUrl(e.target.value)}
+            />
+            <input
+              type="text"
+              className="border rounded px-3 py-2 text-sm w-full sm:w-48"
+              placeholder="Clé projet JIRA (ex: AI)"
+              value={jiraProjectKey}
+              onChange={e => setJiraProjectKey(e.target.value)}
+            />
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2 shadow"
+              onClick={handleExportToJira}
+              disabled={isExporting || result === "Analyse en cours..."}
+            >
+              {isExporting ? "Export en cours..." : "Exporter vers JIRA"}
+            </button>
+          </div>
+          {jiraExportResult && jiraExportResult.tickets && (
+            <div className="mb-4">
+              <div className="font-bold text-sm mb-1">Tickets créés :</div>
+              <ul className="list-disc ml-6">
+                {jiraExportResult.tickets.map((t, idx) => (
+                  <li key={idx}>
+                    <a href={t.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">{t.key}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </StepLayout>
 
         <StepLayout id="timeline" title="Livraison" icon={<Calendar className="w-6 h-6 text-green-600" />}>
@@ -911,6 +1110,23 @@ export default function Home() {
             }
             return null;
           })()}
+          {confidenceScore !== null && (
+            <div className="mb-4">
+              <span
+                className={`rounded-full text-sm font-medium px-3 py-1 shadow bg-opacity-10 inline-block
+                  ${confidenceScore > 85 ? 'bg-green-500 text-green-900' : confidenceScore >= 60 ? 'bg-yellow-400 text-yellow-900' : 'bg-red-500 text-red-50'}`}
+                title="Score de fiabilité automatique de l'estimation IA"
+              >
+                Score IA : {confidenceScore}/100
+              </span>
+              {/* Option : lien d'explication */}
+              <button
+                className="ml-2 underline text-xs text-gray-500 hover:text-gray-800"
+                onClick={() => alert('Le score IA est calculé automatiquement selon le nombre et l'équilibre des tâches estimées. Plus il est élevé, plus la décomposition semble fiable.')}
+                type="button"
+              >Pourquoi ce score ?</button>
+            </div>
+          )}
         </StepLayout>
 
         <StepLayout id="conclusion" title="Conclusion" icon={<CheckCircle className="w-6 h-6 text-green-500" />}>
@@ -986,51 +1202,34 @@ export default function Home() {
               )}
             </>
           )}
-        </StepLayout>
-
-        <StepLayout id="feedback" title="Feedback utilisateur" icon={<MessageCircle className="w-6 h-6 text-yellow-500" />}>
-          <div className="pb-6 mb-6 border-b border-gray-200">
-            <div className="mb-4 text-gray-700 text-sm">Vos retours aident l'IA à mieux estimer vos futures fonctionnalités.</div>
-            <button
-              className="flex items-center gap-2 bg-yellow-400 text-yellow-900 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-500 transition mb-4"
-              onClick={() => setShowFeedback(true)}
-            >
-              <MessageCircle className="w-5 h-5" />
-              Saisir le feedback post-livraison
-            </button>
-            {showFeedback && (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setIsExporting(true);
-                  try {
-                    await handleSendFeedback();
-                  } finally {
-                    setIsExporting(false);
-                  }
-                }}
-                className="mb-4"
-              >
-                <textarea
-                  className="w-full rounded-md border border-gray-300 p-3 text-sm mb-2"
-                  placeholder="Votre retour nous aide à améliorer l'estimation…"
-                  value={feedbackComment}
-                  onChange={e => setFeedbackComment(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    type="submit"
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-                    disabled={isExporting}
-                  >
-                    {isExporting && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>}
-                    Envoyer
-                  </button>
-                  {/* Toggle rapide 👍 / 👎 */}
-                  <button type="button" className={`p-2 rounded hover:bg-gray-100 ${thumbVoted === 'up' ? 'bg-green-100' : ''}`} title="Estimation utile" onClick={() => handleThumb('up')} disabled={!!thumbVoted}><ThumbsUp className="w-5 h-5 text-green-600" /></button>
-                  <button type="button" className={`p-2 rounded hover:bg-gray-100 ${thumbVoted === 'down' ? 'bg-red-100' : ''}`} title="Estimation peu utile" onClick={() => handleThumb('down')} disabled={!!thumbVoted}><ThumbsDown className="w-5 h-5 text-red-600" /></button>
-                </div>
+          {/* ExportCenter à la fin de la conclusion */}
+          <div id="exports">
+            <ExportCenter
+              tasks={(() => {
+                // Extraction des tâches IA (nom + estimation)
+                const taskLines = (result.match(/\d+\.\s.*?:\s*\d+\s*jours?/g) || result.match(/-.*?:\s*\d+\s*jours?/g) || []);
+                const dateLivraison = (() => {
+                  const dateMatches = Array.from(result.matchAll(/\d{2}\/\d{2}\/\d{4}/g));
+                  return dateMatches.length > 0 ? dateMatches[dateMatches.length - 1][0] : '';
+                })();
+                return taskLines.map(l => {
+                  const match = l.match(/^(?:\d+\.|-)\s*(.*?)\s*:\s*(\d+\s*jours?)/);
+                  return {
+                    name: match ? match[1].trim() : l,
+                    duration: match ? match[2] : '—',
+                    deliveryDate: dateLivraison,
+                  };
+                });
+              })()}
+              result={result}
+              feature={feature}
+              startDate={startDate}
+              notionDatabaseId={notionDatabaseId}
+              trelloListId={trelloListId}
+              jiraBaseUrl={jiraBaseUrl}
+              jiraProjectKey={jiraProjectKey}
+            />
+          </div>
                 {/* StatusMessage pour feedback */}
                 {statusMessage && (
                   <StatusMessage
@@ -1051,8 +1250,8 @@ export default function Home() {
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="p-2 text-left">Date</th>
-                    <th className="p-2 text-left">Estimation (j)</th>
-                    <th className="p-2 text-left">Réel (j)</th>
+                    <th className="p-2 text-left">Feature</th>
+                    <th className="p-2 text-left">NPS</th>
                     <th className="p-2 text-left">Commentaire</th>
                   </tr>
                 </thead>
@@ -1060,8 +1259,8 @@ export default function Home() {
                   {feedbackHistory.map((f, idx) => (
                     <tr key={idx} className="border-t border-gray-100">
                       <td className="p-2">{new Date(f.date).toLocaleDateString()}</td>
-                      <td className="p-2">{f.estimation}</td>
-                      <td className="p-2">{f.realDuration}</td>
+                      <td className="p-2">{f.feature || '—'}</td>
+                      <td className="p-2 font-bold text-blue-700">{typeof f.nps === 'number' ? f.nps : '—'}</td>
                       <td className="p-2">{f.comment}</td>
                     </tr>
                   ))}
