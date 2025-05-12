@@ -104,7 +104,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     // Analyse du texte pour scoring automatique
     // Extraction des tâches et durées (ex: "1. Tâche : 3 jours")
     const taskMatches = output.match(/(?:\d+\.|-)\s*[^:]+:\s*(\d+)\s*jours?/gi) || [];
-    const durations = taskMatches.map(m => {
+    const durations = taskMatches.map((m: string) => {
       const d = m.match(/(\d+)\s*jours?/);
       return d ? parseInt(d[1], 10) : null;
     }).filter(Boolean);
