@@ -23,8 +23,8 @@ export default function Home() {
       setResult(data.output || "");
       // Extraction robuste des tâches : capture le nom avant le ':'
       const lines = (data.output || "").split(/\n|\r/);
-      const taskLines = lines.filter(l => /^\s*(\d+\.|-)\s*[^:]+:/i.test(l));
-      setTasks(taskLines.map(l => {
+      const taskLines = lines.filter((l: string) => /^\s*(\d+\.|-)\s*[^:]+:/i.test(l));
+      setTasks(taskLines.map((l: string) => {
         const match = l.match(/^\s*(?:\d+\.|-)\s*([^:]+):/i);
         return match ? match[1].trim() : l.trim();
       }));
