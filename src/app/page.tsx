@@ -39,6 +39,23 @@ export default function Home() {
             <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" disabled>Générer estimation</button>
           </div>
         </section>
+
+        {/* Bloc Livraison & scoring */}
+        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
+          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
+            {/* <Calendar className="w-6 h-6 text-blue-500" /> */}
+            Livraison & scoring
+          </h2>
+          <div className="w-full flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="font-medium">Estimation finale</label>
+              <div className="text-gray-700">Date de livraison estimée : <span className="font-bold">--/--/----</span></div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">Score de confiance : <span className="font-bold">--</span></span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
