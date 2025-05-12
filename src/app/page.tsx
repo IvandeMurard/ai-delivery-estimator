@@ -1,6 +1,35 @@
 "use client";
 
+import { useState } from "react";
+
 export default function Home() {
+  const [feature, setFeature] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState("");
+  const [tasks, setTasks] = useState<string[]>([]);
+
+  const handleAnalyze = async () => {
+    if (!feature) return;
+    setIsLoading(true);
+    setResult("");
+    setTasks([]);
+    try {
+      const res = await fetch("/api/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feature })
+      });
+      const data = await res.json();
+      setResult(data.output || "");
+      // Extraction simple des tâches (à affiner plus tard)
+      const matches = data.output.match(/(?:\d+\.|-)\s*([^:]+):/g) || [];
+      setTasks(matches.map((m: string) => m.replace(/(?:\d+\.|-)\s*|:/g, "").trim()));
+    } catch {
+      setResult("Erreur lors de l'analyse IA");
+    }
+    setIsLoading(false);
+  };
+
   return (
     <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
       {/* StepNav : sticky top sur mobile, fixed sur desktop */}
@@ -16,8 +45,21 @@ export default function Home() {
           <div className="w-full flex flex-col gap-6 md:gap-8 mb-8">
             <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <label htmlFor="feature" className="font-medium mb-2">Décris la fonctionnalité à estimer</label>
-              <textarea id="feature" className="border rounded p-2 min-h-[80px]" placeholder="Ex : Permettre à l'utilisateur de ..." />
-              <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" disabled>Analyser avec l'IA</button>
+              <textarea
+                id="feature"
+                className="border rounded p-2 min-h-[80px]"
+                placeholder="Ex : Permettre à l'utilisateur de ..."
+                value={feature}
+                onChange={e => setFeature(e.target.value)}
+                disabled={isLoading}
+              />
+              <button
+                className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded ${!feature || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!feature || isLoading}
+                onClick={handleAnalyze}
+              >
+                {isLoading ? 'Analyse en cours...' : "Analyser avec l'IA"}
+              </button>
             </div>
           </div>
         </section>
