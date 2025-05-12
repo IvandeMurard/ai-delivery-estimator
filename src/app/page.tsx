@@ -34,7 +34,7 @@ export default function Home() {
     <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
       {/* StepNav : sticky top sur mobile, fixed sur desktop */}
       {/* <StepNav steps={steps} /> */}
-      <h1 className="text-4xl font-extrabold mb-4 text-blue-800 w-full text-center">💡 Estimation par IA</h1>
+      <h1 className="text-4xl font-extrabold mb-4 text-blue-800 w-full text-center">💡 Estimation par IA <span className='text-lg font-normal text-gray-400'>(en reconstruction)</span></h1>
 
       <div className="w-full max-w-screen-md mx-auto">
         <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
