@@ -99,7 +99,7 @@ export default function Home() {
     }
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, []);
 
   // Sauvegarde automatique dans localStorage
   useEffect(() => {
@@ -302,7 +302,7 @@ export default function Home() {
         setError("Erreur lors de la connexion à GitHub.")
       }
     })()
-  }, [githubOwner, githubRepo])
+  }, [githubOwner, githubRepo]);
 
   const handleSendFeedback = async () => {
     setFeedbackSuccess(false);
