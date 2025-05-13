@@ -107,125 +107,80 @@ export default function EstimationLegacy() {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 px-2 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+      <div className="flex flex-col gap-2 mb-6">
+        <Link href="/" className="text-blue-600 underline w-fit">← Page précédente</Link>
+        <h1 className="text-3xl font-extrabold text-blue-900 flex items-center gap-2 tracking-tight">
           <span role="img" aria-label="bulb">💡</span> Estimation par IA (Version Legacy)
         </h1>
-        <Link href="/" className="text-blue-600 underline font-medium hover:text-blue-800">Retour à la landing page</Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 w-full">
         {/* Colonne 1 : Saisie & contexte */}
-        <div className="bg-white rounded-lg shadow p-5 flex flex-col gap-4 min-w-[260px]">
-          <StepLayout id="saisie" stepNumber={1} title={<span>Saisie & contexte</span>} icon={<FaRegFileAlt />}> 
-            <div className="space-y-4">
-              <div>
-                <label className="block font-medium text-gray-800 mb-1">Description de la fonctionnalité *</label>
-                <textarea
-                  className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                  rows={3}
-                  value={feature}
-                  onChange={e => setFeature(e.target.value)}
-                  placeholder="Ex : Authentification Google, dashboard, etc."
-                  required
-                />
-              </div>
-              <div>
-                <label className="block font-medium text-gray-800 mb-1">Date de démarrage *</label>
-                <input
-                  type="date"
-                  className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[120px]">
-                  <label className="block font-medium text-gray-800 mb-1">Capacité équipe (%)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                    value={teamCapacity}
-                    onChange={e => setTeamCapacity(Number(e.target.value))}
-                  />
-                </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label className="block font-medium text-gray-800 mb-1">Jours d'absence</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                    value={teamAbsences}
-                    onChange={e => setTeamAbsences(Number(e.target.value))}
-                  />
-                </div>
-                <div className="flex items-center gap-2 mt-7">
-                  <input
-                    type="checkbox"
-                    checked={excludeWeekends}
-                    onChange={e => setExcludeWeekends(e.target.checked)}
-                    id="weekends"
-                  />
-                  <label htmlFor="weekends" className="text-gray-800">Exclure les week-ends</label>
-                </div>
-              </div>
-              <div>
-                <label className="block font-medium text-gray-800 mb-1">Source de vélocité</label>
-                <select
-                  className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                  value={velocitySource}
-                  onChange={e => setVelocitySource(e.target.value)}
-                >
-                  <option value="github">GitHub</option>
-                  <option value="trello">Trello</option>
-                </select>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[180px]">
-                  <label className="block font-medium text-gray-800 mb-1">Dépendances</label>
-                  <input
-                    className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                    value={dependencies}
-                    onChange={e => setDependencies(e.target.value)}
-                    placeholder="Ex : API externe, équipe data, etc."
-                  />
-                </div>
-                <div className="flex-1 min-w-[180px]">
-                  <label className="block font-medium text-gray-800 mb-1">Risques</label>
-                  <input
-                    className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white"
-                    value={risks}
-                    onChange={e => setRisks(e.target.value)}
-                    placeholder="Ex : instabilité API, dette technique, etc."
-                  />
-                </div>
-              </div>
-              <button
-                className="mt-4 px-6 py-2 bg-blue-600 text-white rounded shadow disabled:opacity-50"
-                disabled={isAnalyzing || !feature || !startDate}
-                onClick={handleAnalyze}
-              >
-                {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
-              </button>
-              {errorMsg && <div className="mt-2 text-red-600 text-sm">{errorMsg}</div>}
+        <div className="bg-white rounded-xl border border-blue-100 shadow-sm p-6 flex flex-col gap-6 min-w-[280px]">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">1</span>
+              <span className="text-xl font-bold text-blue-900">Saisie & contexte</span>
             </div>
-          </StepLayout>
+            <label className="block font-semibold text-gray-800 mb-1">Description de la fonctionnalité *</label>
+            <textarea className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white mb-2" rows={3} value={feature} onChange={e => setFeature(e.target.value)} placeholder="Ex : Authentification Google, dashboard, etc." required />
+            <label className="block font-semibold text-gray-800 mb-1">Date de démarrage *</label>
+            <input type="date" className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white mb-2" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+            <div className="flex flex-wrap gap-4 mb-2">
+              <div className="flex-1 min-w-[120px]">
+                <label className="block font-semibold text-gray-800 mb-1">Capacité équipe (%)</label>
+                <input type="number" min={0} max={100} className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white" value={teamCapacity} onChange={e => setTeamCapacity(Number(e.target.value))} />
+              </div>
+              <div className="flex-1 min-w-[120px]">
+                <label className="block font-semibold text-gray-800 mb-1">Jours d'absence</label>
+                <input type="number" min={0} className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white" value={teamAbsences} onChange={e => setTeamAbsences(Number(e.target.value))} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <input type="checkbox" checked={excludeWeekends} onChange={e => setExcludeWeekends(e.target.checked)} id="weekends" />
+              <label htmlFor="weekends" className="text-gray-800">Exclure les week-ends</label>
+            </div>
+            <label className="block font-semibold text-gray-800 mb-1">Source de vélocité</label>
+            <select className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white mb-2" value={velocitySource} onChange={e => setVelocitySource(e.target.value)}>
+              <option value="github">GitHub</option>
+              <option value="trello">Trello</option>
+            </select>
+            <div className="flex flex-wrap gap-4 mb-2">
+              <div className="flex-1 min-w-[180px]">
+                <label className="block font-semibold text-gray-800 mb-1">Dépendances</label>
+                <input className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white" value={dependencies} onChange={e => setDependencies(e.target.value)} placeholder="Ex : API externe, équipe data, etc." />
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <label className="block font-semibold text-gray-800 mb-1">Risques</label>
+                <input className="rounded-md border px-3 py-2 w-full text-gray-800 bg-white" value={risks} onChange={e => setRisks(e.target.value)} placeholder="Ex : instabilité API, dette technique, etc." />
+              </div>
+            </div>
+            <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded shadow disabled:opacity-50 font-bold" disabled={isAnalyzing || !feature || !startDate} onClick={handleAnalyze}>
+              {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
+            </button>
+            {errorMsg && <div className="mt-2 text-red-600 text-sm">{errorMsg}</div>}
+          </div>
         </div>
-        {/* Colonne 2 : Analyse IA & Découpage */}
-        <div className="bg-white rounded-lg shadow p-5 flex flex-col gap-4 min-w-[260px]">
-          <StepLayout id="analyse" stepNumber={2} title={<span>Analyse IA</span>} icon={<FaRegListAlt />}> 
+        {/* Colonne 2 : Analyse IA & Tâches techniques */}
+        <div className="flex flex-col gap-6 min-w-[280px]">
+          <div className="bg-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">2</span>
+              <span className="text-xl font-bold text-blue-900">Analyse IA</span>
+            </div>
             <div className="text-gray-700 text-sm mb-2">
               Pour estimer les délais de livraison de la fonctionnalité <b>"{feature || '...' }"</b>, nous devons d'abord découper cette fonctionnalité en plusieurs tâches techniques. Voici une décomposition possible :
             </div>
-          </StepLayout>
-          <StepLayout id="decoupage" stepNumber={3} title={<span>Tâches techniques</span>} icon={<FaRegListAlt />}> 
+          </div>
+          <div className="bg-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">3</span>
+              <span className="text-xl font-bold text-blue-900">Tâches techniques</span>
+            </div>
             <table className="min-w-full text-sm text-gray-800">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 font-medium">Tâches</th>
-                  <th className="text-left py-2 font-medium">Estimation</th>
+                  <th className="text-left py-2 font-semibold">Tâches</th>
+                  <th className="text-left py-2 font-semibold">Estimation</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,26 +196,34 @@ export default function EstimationLegacy() {
                 )}
               </tbody>
             </table>
-            <div className="mt-4 font-bold text-right text-gray-800">
+            <div className="mt-4 font-bold text-right text-blue-900">
               Total estimé : {totalDays + buffer} jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
             </div>
-          </StepLayout>
+          </div>
         </div>
-        {/* Colonne 3 : Conclusion */}
-        <div className="bg-white rounded-lg shadow p-5 flex flex-col gap-4 min-w-[260px]">
-          <StepLayout id="conclusion" stepNumber={4} title={<span>Conclusion</span>} icon={<FaRegCheckCircle />}> 
-            <div className="text-gray-800 text-sm">
+        {/* Colonne 3 : Conclusion & Livraison estimée */}
+        <div className="flex flex-col gap-6 min-w-[280px]">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">4</span>
+              <span className="text-xl font-bold text-blue-900">Conclusion</span>
+            </div>
+            <div className="text-gray-800 text-sm mb-2">
               {aiText ? (
                 <div>{aiText}</div>
               ) : (
                 <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
               )}
               {aiCorrection && <div className="text-sm text-orange-600">{aiCorrection}</div>}
-              <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded shadow" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
             </div>
-          </StepLayout>
-          <StepLayout id="livraison" stepNumber={5} title={<span>Livraison estimée</span>} icon={<FaRegCalendarAlt />}> 
-            <div className="text-gray-800 text-lg font-bold">
+            <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded shadow font-bold" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
+          </div>
+          <div className="bg-green-50 rounded-xl border border-green-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">5</span>
+              <span className="text-xl font-bold text-blue-900">Livraison estimée</span>
+            </div>
+            <div className="text-gray-800 text-lg font-bold mb-2">
               {deliveryDate ? (
                 <span>Livraison estimée : <span className="text-green-600">{deliveryDate}</span></span>
               ) : (
@@ -274,11 +237,7 @@ export default function EstimationLegacy() {
               ) : (
                 <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
               )}
-              <button
-                className="text-xs underline text-blue-600"
-                onClick={() => setShowScoreDetails(v => !v)}
-                disabled={scoreDetails.length === 0}
-              >
+              <button className="text-xs underline text-blue-600" onClick={() => setShowScoreDetails(v => !v)} disabled={scoreDetails.length === 0}>
                 {showScoreDetails ? "Masquer les détails" : "Détails"}
               </button>
             </div>
@@ -289,34 +248,21 @@ export default function EstimationLegacy() {
                 ))}
               </ul>
             )}
-          </StepLayout>
+          </div>
         </div>
-        {/* Colonne 4 : Feedback & exports */}
-        <div className="bg-white rounded-lg shadow p-5 flex flex-col gap-4 min-w-[260px]">
-          <StepLayout id="feedback" stepNumber={6} title={<span>Feedback & historique</span>} icon={<FaRegCommentDots />}> 
+        {/* Colonne 4 : Feedback & Exports */}
+        <div className="flex flex-col gap-6 min-w-[280px]">
+          <div className="bg-yellow-50 rounded-xl border border-yellow-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">6</span>
+              <span className="text-xl font-bold text-yellow-700">Feedback & historique</span>
+            </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="font-medium text-gray-800">Votre note (NPS) :</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={10}
-                  className="rounded-md border px-3 py-2 w-16 text-gray-800 bg-white"
-                  value={nps}
-                  onChange={e => setNps(e.target.value)}
-                />
-                <input
-                  type="text"
-                  className="rounded-md border px-3 py-2 flex-1 text-gray-800 bg-white"
-                  placeholder="Un commentaire ?"
-                  value={npsComment}
-                  onChange={e => setNpsComment(e.target.value)}
-                />
-                <button
-                  className="px-3 py-2 bg-blue-600 text-white rounded"
-                  onClick={handleSendNps}
-                  disabled={!nps}
-                >Envoyer</button>
+                <label className="font-semibold text-gray-800">Votre note (NPS) :</label>
+                <input type="number" min={0} max={10} className="rounded-md border px-3 py-2 w-16 text-gray-800 bg-white" value={nps} onChange={e => setNps(e.target.value)} />
+                <input type="text" className="rounded-md border px-3 py-2 flex-1 text-gray-800 bg-white" placeholder="Un commentaire ?" value={npsComment} onChange={e => setNpsComment(e.target.value)} />
+                <button className="px-3 py-2 bg-orange-500 text-white rounded font-bold" onClick={handleSendNps} disabled={!nps}>Envoyer</button>
               </div>
               {npsHistory.length > 0 && (
                 <div className="mt-2">
@@ -329,10 +275,14 @@ export default function EstimationLegacy() {
                 </div>
               )}
             </div>
-          </StepLayout>
-          <StepLayout id="exports" stepNumber={7} title={<span>Exports</span>} icon={<FaRegFolderOpen />}> 
+          </div>
+          <div className="bg-gray-50 rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">7</span>
+              <span className="text-xl font-bold text-gray-700">Exports</span>
+            </div>
             <ExportCenter enabled={exportReady} />
-          </StepLayout>
+          </div>
         </div>
       </div>
     </div>
