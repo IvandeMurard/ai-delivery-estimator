@@ -205,7 +205,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     confidenceScore = Math.max(10, Math.min(100, confidenceScore));
 
     // Appliquer le correctif automatique à l'estimation totale si besoin
-    let totalEstimation = durations.reduce((sum, d) => sum + (d || 0), 0);
+    let totalEstimation = durations.reduce((sum: number, d) => sum + (d || 0), 0);
     let correctedEstimation = totalEstimation;
     if (correctionPct !== 0) {
       correctedEstimation = Math.round(totalEstimation * (1 + correctionPct / 100));
