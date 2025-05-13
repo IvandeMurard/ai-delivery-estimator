@@ -24,6 +24,7 @@ if (typeof window !== "undefined") {
 }
 
 type Task = { name: string; days: number; tool: string };
+type ScoreDetail = { label: string; value: number };
 
 export default function Home() {
   // Saisie & contexte
@@ -46,7 +47,7 @@ export default function Home() {
   // Livraison & scoring (initialisé à vide)
   const [deliveryDate, setDeliveryDate] = useState("");
   const [confidenceScore, setConfidenceScore] = useState(null);
-  const [scoreDetails, setScoreDetails] = useState([]);
+  const [scoreDetails, setScoreDetails] = useState<ScoreDetail[]>([]);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
   // Résultat / conclusion (initialisé à vide)
