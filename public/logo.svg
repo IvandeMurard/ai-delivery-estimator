@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cercle de fond -->
+  <circle cx="256" cy="256" r="240" fill="#4F46E5"/>
+  
+  <!-- Icône de calendrier stylisée -->
+  <rect x="160" y="160" width="192" height="192" rx="16" fill="white"/>
+  <rect x="160" y="160" width="192" height="48" rx="16" fill="#4F46E5"/>
+  <line x1="208" y1="256" x2="304" y2="256" stroke="#4F46E5" stroke-width="8"/>
+  <line x1="208" y1="304" x2="304" y2="304" stroke="#4F46E5" stroke-width="8"/>
+  
+  <!-- Étoile pour l'IA -->
+  <path d="M256 96L280 160L344 160L296 200L320 264L256 224L192 264L216 200L168 160L232 160L256 96Z" fill="white"/>
+</svg> 

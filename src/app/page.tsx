@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import StepLayout from "../components/StepLayout";
+import { useState, useEffect } from "react";
+import StepLayout from "./components/StepLayout";
 import { FaRegFileAlt, FaRegListAlt, FaRegCalendarAlt, FaRegCheckCircle, FaRegCommentDots, FaRegFolderOpen } from "react-icons/fa";
 import Link from "next/link";
 
+// Dummy ExportCenter (à remplacer par le vrai composant si existant)
 function ExportCenter({ enabled }: { enabled: boolean }) {
   return (
     <div className="flex gap-3 flex-wrap">
@@ -17,7 +18,12 @@ function ExportCenter({ enabled }: { enabled: boolean }) {
   );
 }
 
-export default function EstimationLegacy() {
+// Appliquer le fond général clair
+if (typeof window !== "undefined") {
+  document.body.classList.add("bg-gray-100");
+}
+
+export default function Home() {
   // Saisie & contexte
   const [feature, setFeature] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -103,15 +109,18 @@ export default function EstimationLegacy() {
   };
 
   return (
-    <div className="max-w-screen-lg mx-auto space-y-8 px-2 sm:px-6 py-10">
+    <div className="max-w-screen-md mx-auto space-y-8 px-2 sm:px-6 py-10">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <span role="img" aria-label="bulb">💡</span> Estimation par IA (Version Legacy)
+          <span role="img" aria-label="bulb">💡</span> Estimation par IA
         </h1>
         <Link href="/" className="text-blue-600 underline font-medium hover:text-blue-800">Retour à la landing page</Link>
       </div>
+      <div className="bg-blue-50 border border-blue-100 rounded p-4 text-gray-700 text-sm mb-2">
+        Notre IA analyse votre description, la vélocité de votre équipe (GitHub, Trello…), la capacité réelle (disponibilité, absences, week-ends), les dépendances et risques, ainsi que l'historique de vos feedbacks pour générer un découpage technique, une estimation réaliste et un scoring de confiance. Après chaque livraison, le système apprend et s'ajuste automatiquement pour affiner ses prochaines prévisions.
+      </div>
       {/* Saisie & contexte */}
-      <StepLayout id="saisie" stepNumber={1} title={<span>Saisie & contexte</span>} icon={<FaRegFileAlt />}> 
+      <StepLayout id="saisie" stepNumber={1} title={<span>Saisie & contexte</span>} icon={<FaRegFileAlt />}>
         <div className="space-y-4">
           <div>
             <label className="block font-medium text-gray-800 mb-1">Description de la fonctionnalité *</label>
@@ -280,7 +289,7 @@ export default function EstimationLegacy() {
       </StepLayout>
 
       {/* Feedback & historique */}
-      <StepLayout id="feedback" stepNumber={5} title={<span>Feedback & historique</span>} icon={<FaRegCommentDots />}> 
+      <StepLayout id="feedback" stepNumber={5} title={<span>Feedback & historique</span>} icon={<FaRegCommentDots />}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <label className="font-medium text-gray-800">Votre note (NPS) :</label>
@@ -319,9 +328,9 @@ export default function EstimationLegacy() {
       </StepLayout>
 
       {/* Exports */}
-      <StepLayout id="exports" stepNumber={6} title={<span>Exports</span>} icon={<FaRegFolderOpen />}> 
+      <StepLayout id="exports" stepNumber={6} title={<span>Exports</span>} icon={<FaRegFolderOpen />}>
         <ExportCenter enabled={exportReady} />
       </StepLayout>
     </div>
   );
-} 
+}
