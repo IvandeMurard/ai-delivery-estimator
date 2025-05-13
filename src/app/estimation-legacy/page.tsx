@@ -5,14 +5,6 @@ import StepLayout from "../components/StepLayout";
 import { FaRegFileAlt, FaRegListAlt, FaRegCalendarAlt, FaRegCheckCircle, FaRegCommentDots, FaRegFolderOpen } from "react-icons/fa";
 import Link from "next/link";
 
-// Définir le type Task pour le découpage & estimation
-type Task = {
-  name: string;
-  days: number;
-  tool: string;
-  // ajoute d'autres propriétés si besoin
-};
-
 function ExportCenter({ enabled }: { enabled: boolean }) {
   return (
     <div className="flex gap-3 flex-wrap">
@@ -39,13 +31,13 @@ export default function EstimationLegacy() {
   const [analysisDone, setAnalysisDone] = useState(false);
 
   // Découpage & estimation (initialisé à vide)
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState([]);
   const [totalDays, setTotalDays] = useState(0);
   const [buffer, setBuffer] = useState(0);
 
   // Livraison & scoring (initialisé à vide)
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  const [confidenceScore, setConfidenceScore] = useState(null);
   const [scoreDetails, setScoreDetails] = useState([]);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
@@ -88,7 +80,7 @@ export default function EstimationLegacy() {
         }),
       });
       if (!res.ok) throw new Error("Erreur API");
-      const data: { tasks: Task[]; totalDays: number; buffer: number; deliveryDate: string; confidenceScore: number; scoreDetails: any[]; aiCorrection: string; aiText: string } = await res.json();
+      const data = await res.json();
       setTasks(data.tasks || []);
       setTotalDays(data.totalDays || 0);
       setBuffer(data.buffer || 0);
@@ -231,7 +223,7 @@ export default function EstimationLegacy() {
               {tasks.length === 0 ? (
                 <tr><td colSpan={3} className="text-center text-gray-400 italic">Veuillez lancer l'analyse IA.</td></tr>
               ) : (
-                (tasks as Task[]).map((t, i) => (
+                tasks.map((t, i) => (
                   <tr key={i} className="border-b">
                     <td className="py-2">{t.name}</td>
                     <td className="py-2">{t.days}</td>
@@ -332,4 +324,4 @@ export default function EstimationLegacy() {
       </StepLayout>
     </div>
   );
-} // force build
+} 
