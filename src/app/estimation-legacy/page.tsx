@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+// force build
+import React from 'react';
 
 const EstimationLegacy = () => {
-  const [scoreDetails, setScoreDetails] = useState<any[]>([]);
-
-  // ... rest of the component code ...
-
   return (
-    // ... rest of the component JSX ...
+    <div>
+      Legacy estimation page - build trigger
+    </div>
   );
 };
 
