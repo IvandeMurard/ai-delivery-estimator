@@ -45,7 +45,7 @@ export default function EstimationLegacy() {
 
   // Livraison & scoring (initialisé à vide)
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [confidenceScore, setConfidenceScore] = useState(null);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
   const [scoreDetails, setScoreDetails] = useState([]);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
