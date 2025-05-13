@@ -203,27 +203,21 @@ export default function Home() {
       <main className="max-w-screen-lg mx-auto px-6 py-10 space-y-12">
         <StepLayout id="saisie" title="🧾 Saisie & contexte" icon={<FaRegFileAlt />}>
           {/* Saisie & contexte : description, date, capacité, vélocité, dépendances, risques, bouton analyser */}
-          {/* ... déplacer ici le contenu du bloc Saisie & contexte ... */}
         </StepLayout>
         <StepLayout id="decoupage" title="🔍 Découpage & estimation" icon={<FaRegListAlt />}>
           {/* Découpage & estimation : tableau tâches, total, buffer, pondération IA */}
-          {/* ... déplacer ici le contenu du bloc Découpage & estimation ... */}
         </StepLayout>
         <StepLayout id="livraison" title="📆 Livraison & scoring" icon={<FaRegCalendarAlt />}>
           {/* Livraison & scoring : date, score de confiance, détails */}
-          {/* ... déplacer ici le contenu du bloc Livraison & scoring ... */}
         </StepLayout>
         <StepLayout id="resultat" title="📄 Résultat / conclusion" icon={<FaRegCheckCircle />}>
           {/* Résultat : texte généré, correctif IA, export PDF */}
-          {/* ... déplacer ici le contenu du bloc Résultat ... */}
         </StepLayout>
         <StepLayout id="feedback" title="💬 Feedback & historique" icon={<FaRegCommentDots />}>
           {/* Feedback : NPS, commentaire, historique */}
-          {/* ... déplacer ici le contenu du bloc Feedback ... */}
         </StepLayout>
         <StepLayout id="exports" title="🗂️ Exports" icon={<FaRegFolderOpen />}>
           {/* Exports : ExportCenter, boutons exports */}
-          {/* ... déplacer ici le contenu du bloc Exports ... */}
         </StepLayout>
       </main>
     </div>
