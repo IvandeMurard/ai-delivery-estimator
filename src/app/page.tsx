@@ -117,7 +117,10 @@ export default function Home() {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <span role="img" aria-label="bulb">💡</span> Estimation par IA
         </h1>
-        <Link href="/" className="text-blue-600 underline font-medium hover:text-blue-800">Retour à la landing page</Link>
+        <div className="flex flex-col items-end gap-1">
+          <Link href="/" className="text-blue-600 underline font-medium hover:text-blue-800">Retour à la landing page</Link>
+          <Link href="/estimation-legacy" className="text-orange-600 underline font-medium hover:text-orange-800">Accéder à la version legacy</Link>
+        </div>
       </div>
       <div className="bg-blue-50 border border-blue-100 rounded p-4 text-gray-700 text-sm mb-2">
         Notre IA analyse votre description, la vélocité de votre équipe (GitHub, Trello…), la capacité réelle (disponibilité, absences, week-ends), les dépendances et risques, ainsi que l'historique de vos feedbacks pour générer un découpage technique, une estimation réaliste et un scoring de confiance. Après chaque livraison, le système apprend et s'ajuste automatiquement pour affiner ses prochaines prévisions.
