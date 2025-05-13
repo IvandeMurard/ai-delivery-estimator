@@ -6,7 +6,7 @@ import StepLayout from "./components/StepLayout";
 import StepNav from "./components/StepNav";
 import { FaRegFileAlt, FaRegListAlt, FaRegCalendarAlt, FaRegCheckCircle, FaRegCommentDots, FaRegFolderOpen } from "react-icons/fa";
 
-const steps = [
+const navSteps = [
   { id: "saisie", title: "Saisie & contexte", icon: <FaRegFileAlt /> },
   { id: "decoupage", title: "Découpage & estimation", icon: <FaRegListAlt /> },
   { id: "livraison", title: "Livraison & scoring", icon: <FaRegCalendarAlt /> },
@@ -199,7 +199,7 @@ export default function Home() {
 
   return (
     <div className="relative">
-      <StepNav steps={steps} />
+      <StepNav steps={navSteps} />
       <main className="max-w-screen-lg mx-auto px-6 py-10 space-y-12">
         <StepLayout id="saisie" title="🧾 Saisie & contexte" icon={<FaRegFileAlt />}>
           {/* Saisie & contexte : description, date, capacité, vélocité, dépendances, risques, bouton analyser */}
