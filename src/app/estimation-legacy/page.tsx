@@ -17,6 +17,9 @@ function ExportCenter({ enabled }: { enabled: boolean }) {
   );
 }
 
+type Task = { name: string; days: number; tool: string };
+type ScoreDetail = { label: string; value: number };
+
 export default function EstimationLegacy() {
   // Saisie & contexte
   const [feature, setFeature] = useState("");
@@ -31,14 +34,14 @@ export default function EstimationLegacy() {
   const [analysisDone, setAnalysisDone] = useState(false);
 
   // Découpage & estimation (initialisé à vide)
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [totalDays, setTotalDays] = useState(0);
   const [buffer, setBuffer] = useState(0);
 
   // Livraison & scoring (initialisé à vide)
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [confidenceScore, setConfidenceScore] = useState(null);
-  const [scoreDetails, setScoreDetails] = useState([]);
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+  const [scoreDetails, setScoreDetails] = useState<ScoreDetail[]>([]);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
   // Résultat / conclusion (initialisé à vide)
