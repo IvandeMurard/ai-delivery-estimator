@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import StepLayout from "./components/StepLayout";
 import { FaRegFileAlt, FaRegListAlt, FaRegCalendarAlt, FaRegCheckCircle, FaRegCommentDots, FaRegFolderOpen } from "react-icons/fa";
+import Link from "next/link";
 
 // Dummy ExportCenter (à remplacer par le vrai composant si existant)
 function ExportCenter({ enabled }: { enabled: boolean }) {
@@ -49,6 +50,7 @@ export default function Home() {
   // Résultat / conclusion (initialisé à vide)
   const [aiCorrection, setAiCorrection] = useState("");
   const [aiText, setAiText] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   // Feedback & historique
   const [nps, setNps] = useState("");
@@ -67,6 +69,7 @@ export default function Home() {
   // Handler analyse IA (appelle l'API et remplit dynamiquement les données)
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
+    setErrorMsg("");
     try {
       const res = await fetch("/api/estimate", {
         method: "POST",
@@ -82,6 +85,7 @@ export default function Home() {
           risks,
         }),
       });
+      if (!res.ok) throw new Error("Erreur API");
       const data = await res.json();
       setTasks(data.tasks || []);
       setTotalDays(data.totalDays || 0);
@@ -92,19 +96,29 @@ export default function Home() {
       setAiCorrection(data.aiCorrection || "");
       setAiText(data.aiText || "");
     } catch (e) {
-      setAiText("Erreur lors de l'analyse IA.");
+      setErrorMsg("Erreur lors de l'analyse IA. Veuillez réessayer.");
       setTasks([]);
       setTotalDays(0);
       setDeliveryDate("");
       setConfidenceScore(null);
       setScoreDetails([]);
       setAiCorrection("");
+      setAiText("");
     }
     setIsAnalyzing(false);
   };
 
   return (
     <div className="max-w-screen-md mx-auto space-y-8 px-2 sm:px-6 py-10">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <span role="img" aria-label="bulb">💡</span> Estimation par IA
+        </h1>
+        <Link href="/" className="text-blue-600 underline font-medium hover:text-blue-800">Retour à la landing page</Link>
+      </div>
+      <div className="bg-blue-50 border border-blue-100 rounded p-4 text-gray-700 text-sm mb-2">
+        Notre IA analyse votre description, la vélocité de votre équipe (GitHub, Trello…), la capacité réelle (disponibilité, absences, week-ends), les dépendances et risques, ainsi que l'historique de vos feedbacks pour générer un découpage technique, une estimation réaliste et un scoring de confiance. Après chaque livraison, le système apprend et s'ajuste automatiquement pour affiner ses prochaines prévisions.
+      </div>
       {/* Saisie & contexte */}
       <StepLayout id="saisie" stepNumber={1} title={<span>Saisie & contexte</span>} icon={<FaRegFileAlt />}>
         <div className="space-y-4">
@@ -199,6 +213,7 @@ export default function Home() {
           >
             {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
           </button>
+          {errorMsg && <div className="mt-2 text-red-600 text-sm">{errorMsg}</div>}
         </div>
       </StepLayout>
 
@@ -215,7 +230,7 @@ export default function Home() {
             </thead>
             <tbody>
               {tasks.length === 0 ? (
-                <tr><td colSpan={3} className="text-center text-gray-400 italic">Aucune tâche générée. Lancez l'analyse IA.</td></tr>
+                <tr><td colSpan={3} className="text-center text-gray-400 italic">Veuillez lancer l'analyse IA.</td></tr>
               ) : (
                 tasks.map((t, i) => (
                   <tr key={i} className="border-b">
@@ -237,14 +252,14 @@ export default function Home() {
       <StepLayout id="livraison" stepNumber={3} title={<span>Livraison & scoring</span>} icon={<FaRegCalendarAlt />}> 
         <div className="space-y-2 text-gray-800">
           <div>
-            <span className="font-semibold">Date de livraison estimée :</span> {deliveryDate || <span className="text-gray-400 italic">Non calculée</span>}
+            <span className="font-semibold">Date de livraison estimée :</span> {deliveryDate || <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>}
           </div>
           <div className="flex items-center gap-3">
             <span className="font-semibold">Score de confiance IA :</span>
             {confidenceScore !== null ? (
               <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">{confidenceScore}%</span>
             ) : (
-              <span className="text-gray-400 italic">Non calculé</span>
+              <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
             )}
             <button
               className="text-xs underline text-blue-600"
@@ -267,7 +282,7 @@ export default function Home() {
       {/* Résultat / conclusion */}
       <StepLayout id="resultat" stepNumber={4} title={<span>Résultat / conclusion</span>} icon={<FaRegCheckCircle />}> 
         <div className="space-y-2 text-gray-800">
-          <div>{aiText || <span className="text-gray-400 italic">Aucune conclusion générée. Lancez l'analyse IA.</span>}</div>
+          <div>{aiText || <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>}</div>
           {aiCorrection && <div className="text-sm text-orange-600">{aiCorrection}</div>}
           <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded shadow" disabled={aiText === ""}>Exporter en PDF</button>
         </div>
