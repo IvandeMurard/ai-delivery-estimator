@@ -23,6 +23,8 @@ if (typeof window !== "undefined") {
   document.body.classList.add("bg-gray-100");
 }
 
+type Task = { name: string; days: number; tool: string };
+
 export default function Home() {
   // Saisie & contexte
   const [feature, setFeature] = useState("");
@@ -37,7 +39,7 @@ export default function Home() {
   const [analysisDone, setAnalysisDone] = useState(false);
 
   // Découpage & estimation (initialisé à vide)
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [totalDays, setTotalDays] = useState(0);
   const [buffer, setBuffer] = useState(0);
 
