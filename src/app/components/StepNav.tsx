@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface Step {
   id: string;
-  label: string;
-  icon?: JSX.Element;
+  title: string;
+  icon?: React.ReactNode;
 }
 
 interface StepNavProps {
@@ -15,24 +15,21 @@ export default function StepNav({ steps }: StepNavProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      let found = steps[0]?.id || '';
-      for (const step of steps) {
+      const offsets = steps.map(step => {
         const el = document.getElementById(step.id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top < window.innerHeight / 2) {
-            found = step.id;
-          }
-        }
-      }
-      setActiveId(found);
+        if (!el) return { id: step.id, top: Infinity };
+        const rect = el.getBoundingClientRect();
+        return { id: step.id, top: Math.abs(rect.top - 100) };
+      });
+      const closest = offsets.reduce((a, b) => (a.top < b.top ? a : b));
+      setActiveId(closest.id);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, [steps]);
 
-  const scrollToStep = (id: string) => {
+  const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -41,21 +38,19 @@ export default function StepNav({ steps }: StepNavProps) {
 
   return (
     <nav
-      className="hidden xl:block fixed top-6 left-6 z-40 bg-white/90 rounded-xl shadow-sm px-4 py-6 text-sm font-medium space-y-3 max-w-[220px]"
+      className="hidden md:flex flex-col fixed left-0 top-24 w-56 bg-white shadow rounded-xl p-4 space-y-2 z-30"
       aria-label="Navigation des étapes"
     >
-      {steps.map((step) => (
+      {steps.map(step => (
         <button
           key={step.id}
-          onClick={() => scrollToStep(step.id)}
-          className={
-            'flex items-center gap-2 w-full text-left px-2 py-2 transition-colors rounded ' +
-            (activeId === step.id ? 'bg-gray-100 text-blue-900 font-semibold' : 'hover:bg-gray-50 text-gray-700')
-          }
+          onClick={() => scrollTo(step.id)}
+          className={`flex items-center gap-3 px-3 py-2 rounded transition font-medium text-left w-full
+            ${activeId === step.id ? 'bg-blue-100 text-blue-800 border-l-4 border-blue-500' : 'hover:bg-gray-50 text-gray-700'}`}
           aria-current={activeId === step.id ? 'step' : undefined}
         >
-          {step.icon && <span className="w-5 h-5 text-blue-500">{step.icon}</span>}
-          <span>{step.label}</span>
+          {step.icon && <span className="text-xl">{step.icon}</span>}
+          <span>{step.title}</span>
         </button>
       ))}
     </nav>

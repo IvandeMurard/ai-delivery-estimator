@@ -1,7 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+import StepLayout from "./components/StepLayout";
+import StepNav from "./components/StepNav";
+import { FaRegFileAlt, FaRegListAlt, FaRegCalendarAlt, FaRegCheckCircle, FaRegCommentDots, FaRegFolderOpen } from "react-icons/fa";
+
+const steps = [
+  { id: "saisie", title: "Saisie & contexte", icon: <FaRegFileAlt /> },
+  { id: "decoupage", title: "Découpage & estimation", icon: <FaRegListAlt /> },
+  { id: "livraison", title: "Livraison & scoring", icon: <FaRegCalendarAlt /> },
+  { id: "resultat", title: "Résultat", icon: <FaRegCheckCircle /> },
+  { id: "feedback", title: "Feedback", icon: <FaRegCommentDots /> },
+  { id: "exports", title: "Exports", icon: <FaRegFolderOpen /> },
+];
 
 export default function Home() {
   const [feature, setFeature] = useState("");
@@ -15,6 +27,74 @@ export default function Home() {
   const [npsLoading, setNpsLoading] = useState(false);
   const [npsHistory, setNpsHistory] = useState<{ nps: string; comment: string; date: string }[]>([]);
   const [exportStatus, setExportStatus] = useState<string>("");
+  const [velocitySource, setVelocitySource] = useState<string>("github");
+  const [velocityData, setVelocityData] = useState<any>(null);
+  const [velocityLoading, setVelocityLoading] = useState(false);
+  const [velocityError, setVelocityError] = useState<string | null>(null);
+  const [teamCapacity, setTeamCapacity] = useState(100); // en %
+  const [teamAbsences, setTeamAbsences] = useState(0); // en jours
+  const [excludeWeekends, setExcludeWeekends] = useState(true);
+  const [estimationPeriod, setEstimationPeriod] = useState(10); // jours ouvrés par défaut (à ajuster dynamiquement plus tard)
+  const [tendance, setTendance] = useState<string | null>(null);
+  const [correctionPct, setCorrectionPct] = useState<number | null>(null);
+  const [totalEstimation, setTotalEstimation] = useState<number | null>(null);
+  const [correctedEstimation, setCorrectedEstimation] = useState<number | null>(null);
+  const [dependencies, setDependencies] = useState<{ name: string; level: string }[]>([]);
+  const [depName, setDepName] = useState("");
+  const [depLevel, setDepLevel] = useState("critique");
+  const [risks, setRisks] = useState("");
+  const [scoreDetails, setScoreDetails] = useState<any>(null);
+
+  // Calcul capacité réelle (simple)
+  const workingDays = estimationPeriod - (excludeWeekends ? Math.floor(estimationPeriod / 7) * 2 : 0); // approximation
+  const realCapacity = Math.max(0, Math.round((workingDays * (teamCapacity / 100)) - teamAbsences));
+
+  useEffect(() => {
+    async function fetchVelocity() {
+      setVelocityData(null);
+      setVelocityError(null);
+      if (velocitySource === "github") {
+        setVelocityLoading(true);
+        try {
+          const res = await fetch("/api/github/velocity");
+          const data = await res.json();
+          if (res.ok) {
+            setVelocityData({
+              summary: `${data.avgPerWeek.toFixed(2)} tickets/semaine, ${data.avgDuration.toFixed(1)} jours/ticket (sur ${data.weeksAnalyzed} sem., ${data.totalClosed} tickets)`
+            });
+          } else {
+            setVelocityError(data.error || "Erreur lors de la récupération de la vélocité GitHub.");
+          }
+        } catch (e) {
+          setVelocityError("Erreur lors de la récupération de la vélocité GitHub.");
+        }
+        setVelocityLoading(false);
+      } else if (velocitySource === "trello") {
+        setVelocityLoading(true);
+        try {
+          const res = await fetch("/api/trello/velocity");
+          const data = await res.json();
+          if (res.ok) {
+            setVelocityData({
+              summary: `${data.avgPerWeek.toFixed(2)} cartes/semaine, ${data.avgDuration.toFixed(1)} jours/carte (sur ${data.weeksAnalyzed} sem., ${data.totalClosed} cartes)`
+            });
+          } else {
+            setVelocityError(data.error || "Erreur lors de la récupération de la vélocité Trello.");
+          }
+        } catch (e) {
+          setVelocityError("Erreur lors de la récupération de la vélocité Trello.");
+        }
+        setVelocityLoading(false);
+      } else if (velocitySource === "jira") {
+        setVelocityData(null);
+        setVelocityError("(À connecter à l'API JIRA)");
+      } else if (velocitySource === "notion") {
+        setVelocityData(null);
+        setVelocityError("(À connecter à l'API Notion)");
+      }
+    }
+    fetchVelocity();
+  }, [velocitySource]);
 
   const handleAnalyze = async () => {
     if (!feature) return;
@@ -25,11 +105,27 @@ export default function Home() {
       const res = await fetch("/api/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feature })
+        body: JSON.stringify({
+          feature,
+          velocitySource,
+          velocityData,
+          teamCapacity,
+          teamAbsences,
+          excludeWeekends,
+          realCapacity,
+          estimationPeriod,
+          dependencies,
+          risks,
+        })
       });
       const data = await res.json();
       setResult(data.output || "");
       setConfidenceScore(typeof data.confidenceScore === 'number' ? data.confidenceScore : null);
+      setTendance(data.tendance || null);
+      setCorrectionPct(typeof data.correctionPct === 'number' ? data.correctionPct : null);
+      setTotalEstimation(typeof data.totalEstimation === 'number' ? data.totalEstimation : null);
+      setCorrectedEstimation(typeof data.correctedEstimation === 'number' ? data.correctedEstimation : null);
+      setScoreDetails(data.scoreDetails || null);
       // Extraction de la date de livraison estimée (ex: 'Date de livraison estimée : 12/07/2024')
       const dateMatch = (data.output || "").match(/date de livraison estimée\s*[:\-–]?\s*([\w\d\/\-]+)/i);
       setDeliveryDate(dateMatch ? dateMatch[1] : "");
@@ -102,185 +198,34 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col items-center bg-gray-50 w-full min-h-screen">
-      {/* StepNav : sticky top sur mobile, fixed sur desktop */}
-      {/* <StepNav steps={steps} /> */}
-      <h1 className="text-4xl font-extrabold mb-4 text-blue-800 w-full text-center">💡 Estimation par IA <span className='text-lg font-normal text-gray-400'>(en reconstruction)</span></h1>
-
-      <div className="w-full max-w-screen-md mx-auto">
-        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
-          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-            {/* <Pen className="w-6 h-6 text-blue-500" /> */}
-            Saisie & contexte
-          </h2>
-          <div className="w-full flex flex-col gap-6 md:gap-8 mb-8">
-            <div className="flex flex-col relative z-0 bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <label htmlFor="feature" className="font-medium mb-2">Décris la fonctionnalité à estimer</label>
-              <textarea
-                id="feature"
-                className="border rounded p-2 min-h-[80px]"
-                placeholder="Ex : Permettre à l'utilisateur de ..."
-                value={feature}
-                onChange={e => setFeature(e.target.value)}
-                disabled={isLoading}
-              />
-              <button
-                className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded ${!feature || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!feature || isLoading}
-                onClick={handleAnalyze}
-              >
-                {isLoading ? 'Analyse en cours...' : "Analyser avec l'IA"}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Bloc Découpage & estimation */}
-        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
-          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-            {/* <Brain className="w-6 h-6 text-blue-500" /> */}
-            Découpage & estimation
-          </h2>
-          <div className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="font-medium">Tâches proposées</label>
-              {tasks.length === 0 ? (
-                <div className="text-gray-400">Aucune tâche proposée pour l'instant</div>
-              ) : (
-                <table className="w-full border text-sm">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border px-2 py-1 text-left">Tâche technique</th>
-                      <th className="border px-2 py-1 text-left">Nombre de jours</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map((t, i) => (
-                      <tr key={i}>
-                        <td className="border px-2 py-1">{t.name}</td>
-                        <td className="border px-2 py-1">{t.days > 0 ? t.days : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="font-bold bg-gray-100">
-                      <td className="border px-2 py-1 text-right">Total</td>
-                      <td className="border px-2 py-1">{tasks.reduce((sum, t) => sum + (t.days || 0), 0)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-            </div>
-            <button
-              className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded ${tasks.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={tasks.length === 0}
-              onClick={handleEstimate}
-            >
-              Générer estimation
-            </button>
-          </div>
-        </section>
-
-        {/* Bloc Livraison & scoring */}
-        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
-          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-            {/* <Calendar className="w-6 h-6 text-blue-500" /> */}
-            Livraison & scoring
-          </h2>
-          <div className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="font-medium">Estimation finale</label>
-              <div className="text-gray-700">Date de livraison estimée : <span className="font-bold">{deliveryDate || '--/--/----'}</span></div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">Score de confiance : <span className="font-bold">{confidenceScore !== null ? confidenceScore : '--'}</span></span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Bloc Feedback NPS */}
-        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
-          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-            {/* <ThumbsUp className="w-6 h-6 text-blue-500" /> */}
-            Feedback NPS
-          </h2>
-          <div className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="font-medium">Votre avis sur l'estimation</label>
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  className="border rounded p-2 w-16"
-                  placeholder="NPS"
-                  value={nps}
-                  onChange={e => setNps(e.target.value)}
-                  disabled={npsLoading}
-                />
-                <input
-                  type="text"
-                  className="border rounded p-2 flex-1"
-                  placeholder="Commentaire (optionnel)"
-                  value={npsComment}
-                  onChange={e => setNpsComment(e.target.value)}
-                  disabled={npsLoading}
-                />
-                <button
-                  className={`bg-blue-600 text-white px-4 py-2 rounded ${!nps || npsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={!nps || npsLoading}
-                  onClick={handleSendNps}
-                >
-                  {npsLoading ? 'Envoi...' : 'Envoyer'}
-                </button>
-              </div>
-            </div>
-            <div className="mt-4">
-              <label className="font-medium">Historique des feedbacks</label>
-              <ul className="list-disc pl-6 text-gray-700">
-                {npsHistory.length === 0 ? (
-                  <li className="text-gray-400">Aucun feedback pour l'instant</li>
-                ) : (
-                  npsHistory.map((f, i) => (
-                    <li key={i}><span className="font-bold">{f.nps}</span> – {f.comment} <span className="text-xs text-gray-400">({f.date})</span></li>
-                  ))
-                )}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* Bloc Exports */}
-        <section className="bg-white rounded-lg p-6 shadow-sm border border-blue-50 mb-8">
-          <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
-            {/* <CheckCircle className="w-6 h-6 text-blue-500" /> */}
-            Exports
-          </h2>
-          <div className="w-full flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                className={`bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center ${!tasks.length ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!tasks.length}
-                onClick={handleExportCSV}
-              >
-                📋 Export CSV
-              </button>
-              <button
-                className={`bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center ${!tasks.length ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!tasks.length}
-                onClick={handleExportPDF}
-              >
-                📤 Export PDF
-              </button>
-              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🧠 Export Notion</button>
-              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>✅ Export Trello</button>
-              <button className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center opacity-50 cursor-not-allowed" disabled>🟠 Export JIRA</button>
-            </div>
-            {exportStatus && <div className="mt-2 text-green-600 text-sm">{exportStatus}</div>}
-            <div className="mt-2 text-gray-500 text-xs">Seul l'export CSV est actif pour l'instant</div>
-          </div>
-        </section>
-      </div>
-    </main>
+    <div className="relative">
+      <StepNav steps={steps} />
+      <main className="max-w-screen-lg mx-auto px-6 py-10 space-y-12">
+        <StepLayout id="saisie" title="🧾 Saisie & contexte" icon={<FaRegFileAlt />}>
+          {/* Saisie & contexte : description, date, capacité, vélocité, dépendances, risques, bouton analyser */}
+          {/* ... déplacer ici le contenu du bloc Saisie & contexte ... */}
+        </StepLayout>
+        <StepLayout id="decoupage" title="🔍 Découpage & estimation" icon={<FaRegListAlt />}>
+          {/* Découpage & estimation : tableau tâches, total, buffer, pondération IA */}
+          {/* ... déplacer ici le contenu du bloc Découpage & estimation ... */}
+        </StepLayout>
+        <StepLayout id="livraison" title="📆 Livraison & scoring" icon={<FaRegCalendarAlt />}>
+          {/* Livraison & scoring : date, score de confiance, détails */}
+          {/* ... déplacer ici le contenu du bloc Livraison & scoring ... */}
+        </StepLayout>
+        <StepLayout id="resultat" title="📄 Résultat / conclusion" icon={<FaRegCheckCircle />}>
+          {/* Résultat : texte généré, correctif IA, export PDF */}
+          {/* ... déplacer ici le contenu du bloc Résultat ... */}
+        </StepLayout>
+        <StepLayout id="feedback" title="💬 Feedback & historique" icon={<FaRegCommentDots />}>
+          {/* Feedback : NPS, commentaire, historique */}
+          {/* ... déplacer ici le contenu du bloc Feedback ... */}
+        </StepLayout>
+        <StepLayout id="exports" title="🗂️ Exports" icon={<FaRegFolderOpen />}>
+          {/* Exports : ExportCenter, boutons exports */}
+          {/* ... déplacer ici le contenu du bloc Exports ... */}
+        </StepLayout>
+      </main>
+    </div>
   );
 }

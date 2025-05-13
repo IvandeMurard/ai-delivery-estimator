@@ -1,20 +1,20 @@
-import { ReactNode } from 'react';
+import React from 'react';
 
 interface StepLayoutProps {
   title: string;
-  icon?: ReactNode;
-  id?: string;
-  children: ReactNode;
+  id: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
 }
 
-export default function StepLayout({ title, icon, id, children }: StepLayoutProps) {
+export default function StepLayout({ title, id, icon, children }: StepLayoutProps) {
   return (
-    <section id={id} className="w-full max-w-screen-md mx-auto bg-white p-6 rounded-xl shadow-sm border space-y-4 scroll-mt-24">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        {icon}
-        {title}
-      </h2>
-      {children}
+    <section id={id} className="rounded-xl shadow bg-white border p-6 space-y-4 scroll-mt-24">
+      <div className="flex items-center gap-3 mb-2">
+        {icon && <span className="text-2xl">{icon}</span>}
+        <h2 className="text-xl font-semibold">{title}</h2>
+      </div>
+      <div>{children}</div>
     </section>
   );
 } 

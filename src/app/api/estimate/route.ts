@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies } = body
+    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks } = body
 
     // Détermine la date de départ à utiliser dans le prompt
     const startDatePrompt = startDate
@@ -14,7 +14,17 @@ export async function POST(request: NextRequest) {
       : `Date de démarrage : aujourd'hui (${new Date().toLocaleDateString('fr-FR')})`
 
     let velocityPrompt = '';
-    if (githubVelocity && githubVelocity.avgPerWeek && githubVelocity.avgDuration) {
+    if (velocityData && velocityData.summary) {
+      if (velocitySource === 'github') {
+        velocityPrompt = `\nVélocité historique de l'équipe (tickets GitHub) :\n- ${velocityData.summary}\nMerci d'en tenir compte pour ajuster l'estimation.`;
+      } else if (velocitySource === 'trello') {
+        velocityPrompt = `\nVélocité historique de l'équipe (cartes Trello) :\n- ${velocityData.summary}\nMerci d'en tenir compte pour ajuster l'estimation.`;
+      } else if (velocitySource === 'jira') {
+        velocityPrompt = `\nVélocité historique de l'équipe (tickets JIRA) :\n- ${velocityData.summary}\nMerci d'en tenir compte pour ajuster l'estimation.`;
+      } else if (velocitySource === 'notion') {
+        velocityPrompt = `\nVélocité historique de l'équipe (tickets Notion) :\n- ${velocityData.summary}\nMerci d'en tenir compte pour ajuster l'estimation.`;
+      }
+    } else if (githubVelocity && githubVelocity.avgPerWeek && githubVelocity.avgDuration) {
       velocityPrompt = `\nVélocité historique de l'équipe (tickets GitHub) :\n- ${githubVelocity.avgPerWeek.toFixed(1)} tickets fermés/semaine\n- Durée moyenne de résolution : ${githubVelocity.avgDuration.toFixed(1)} jours/ticket\nMerci d'en tenir compte pour ajuster l'estimation.`;
     }
 
@@ -32,12 +42,27 @@ export async function POST(request: NextRequest) {
     const priorityPrompt = priority ? `La priorité de la fonctionnalité est : ${priority}.` : "";
     console.log(priorityPrompt);
 
-    const dependenciesPrompt = dependencies?.length
-      ? `Les dépendances techniques mentionnées sont : ${dependencies.join(", ")}.`
-      : "";
+    // Dépendances et risques
+    let dependenciesPrompt = '';
+    if (Array.isArray(dependencies) && dependencies.length > 0) {
+      const crit = dependencies.filter((d: any) => d.level === 'critique');
+      const mod = dependencies.filter((d: any) => d.level === 'modérée');
+      const min = dependencies.filter((d: any) => d.level === 'mineure');
+      dependenciesPrompt = `\nDépendances techniques à prendre en compte :\n`;
+      if (crit.length > 0) dependenciesPrompt += `- Critiques : ${crit.map((d: any) => d.name).join(', ')}\n`;
+      if (mod.length > 0) dependenciesPrompt += `- Modérées : ${mod.map((d: any) => d.name).join(', ')}\n`;
+      if (min.length > 0) dependenciesPrompt += `- Mineures : ${min.map((d: any) => d.name).join(', ')}\n`;
+      dependenciesPrompt += `Merci d'ajouter un buffer de sécurité pour les dépendances critiques et de pondérer l'estimation selon le niveau de risque.`;
+    }
+    let risksPrompt = '';
+    if (typeof risks === 'string' && risks.trim().length > 0) {
+      risksPrompt = `\nRisques identifiés : ${risks.trim()}\nMerci d'en tenir compte pour ajuster la confiance et la date de livraison.`;
+    }
 
     // Lecture des feedbacks et calcul de l'écart moyen
     let feedbackPhrase = '';
+    let correctionPct = 0;
+    let tendance = '';
     try {
       const FEEDBACK_PATH = path.join(process.cwd(), 'feedbacks.json');
       const content = await fs.readFile(FEEDBACK_PATH, 'utf-8');
@@ -57,24 +82,36 @@ export async function POST(request: NextRequest) {
         if (count > 0) {
           const avgPct = sumPct / count;
           const absPct = Math.abs(avgPct).toFixed(1);
-          const tendance = avgPct > 0 ? 'trop optimiste' : 'trop pessimiste';
-          feedbackPhrase = `\nSur les ${count} dernières fonctionnalités, l'estimation était en moyenne ${absPct}% ${tendance}. Merci d'en tenir compte pour ajuster l'estimation.`;
+          tendance = avgPct > 0 ? 'trop optimiste' : 'trop pessimiste';
+          // Correction automatique si écart > 10%
+          if (Math.abs(avgPct) > 10) {
+            correctionPct = avgPct;
+            feedbackPhrase = `\nSur les ${count} dernières fonctionnalités, l'estimation était en moyenne ${absPct}% ${tendance}. Un correctif automatique de ${correctionPct > 0 ? '+' : ''}${correctionPct.toFixed(1)}% sera appliqué à l'estimation. Merci d'en tenir compte.`;
+          } else {
+            feedbackPhrase = `\nSur les ${count} dernières fonctionnalités, l'estimation était en moyenne ${absPct}% ${tendance}.`;
+          }
         }
       }
     } catch {}
+
+    // Bloc capacité équipe avancée
+    let capacityPrompt = '';
+    if (typeof realCapacity === 'number' && typeof teamCapacity === 'number') {
+      capacityPrompt = `\nCapacité équipe déclarée :\n- Capacité totale : ${teamCapacity}%\n- Absences/congés : ${teamAbsences || 0} jours\n- Exclure week-ends : ${excludeWeekends ? 'oui' : 'non'}\n- Capacité réelle calculée : ${realCapacity} jours-homme sur ${estimationPeriod} jours\nMerci d'en tenir compte pour ajuster la date de livraison.`;
+    }
 
     const prompt = `
 Tu es un assistant produit.
 
 Voici la fonctionnalité décrite : "${feature}"
-Capacité équipe : ${capacity} développeur(s)
+${capacityPrompt}
 Niveau d'intégration SI : ${integrationLevel}
 Problématique de données : ${dataConcern}
 ${startDatePrompt}
 ${velocityPrompt}
 ${teamPrompt}
 ${priorityPrompt}
-${dependenciesPrompt}
+${dependenciesPrompt}${risksPrompt}
 ${feedbackPhrase}
 
 Découpe la fonctionnalité en tâches techniques avec estimation.
@@ -109,30 +146,72 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       return d ? parseInt(d[1], 10) : null;
     }).filter(Boolean);
     const nbTasks = durations.length;
-    let confidenceScore = 70;
-    if (nbTasks >= 5) {
-      // Score élevé si >5 tâches et durées équilibrées
-      const min = Math.min(...durations);
-      const max = Math.max(...durations);
-      const ratio = min / max;
-      if (ratio > 0.5) confidenceScore = 95;
-      else confidenceScore = 90;
-    } else if (nbTasks >= 3) {
-      confidenceScore = 80;
-    } else if (nbTasks > 0) {
-      confidenceScore = 60;
-    } else {
-      confidenceScore = 50;
-    }
-    // Ajustement si gros écart de durée
+    let confidenceScore = 80;
+    let scoreDetails: any = {};
+    // 1. Dispersion des durées
     if (durations.length > 1) {
       const min = Math.min(...durations);
       const max = Math.max(...durations);
-      if (max > 2 * min) confidenceScore -= 10;
+      const ratio = min / max;
+      if (ratio > 0.5) {
+        confidenceScore += 10;
+        scoreDetails.durations = 'Tâches équilibrées (+10)';
+      } else {
+        confidenceScore -= 10;
+        scoreDetails.durations = 'Forte dispersion des durées (-10)';
+      }
+    } else if (durations.length === 1) {
+      confidenceScore -= 10;
+      scoreDetails.durations = 'Une seule tâche (-10)';
+    } else {
+      confidenceScore -= 20;
+      scoreDetails.durations = 'Aucune tâche détectée (-20)';
     }
-    confidenceScore = Math.max(30, Math.min(100, confidenceScore));
+    // 2. Dépendances critiques
+    if (Array.isArray(dependencies) && dependencies.some((d: any) => d.level === 'critique')) {
+      confidenceScore -= 15;
+      scoreDetails.dependencies = 'Dépendances critiques présentes (-15)';
+    } else if (Array.isArray(dependencies) && dependencies.length > 0) {
+      confidenceScore -= 5;
+      scoreDetails.dependencies = 'Dépendances non critiques (-5)';
+    } else {
+      scoreDetails.dependencies = 'Aucune dépendance (0)';
+    }
+    // 3. Risques identifiés
+    if (typeof risks === 'string' && risks.trim().length > 0) {
+      confidenceScore -= 10;
+      scoreDetails.risks = 'Risques identifiés (-10)';
+    } else {
+      scoreDetails.risks = 'Aucun risque identifié (0)';
+    }
+    // 4. Vélocité faible
+    if (velocityData && velocityData.summary) {
+      const match = velocityData.summary.match(/([\d\.]+)\s*(tickets|cartes)\/semaine/);
+      if (match && parseFloat(match[1]) < 1) {
+        confidenceScore -= 10;
+        scoreDetails.velocity = 'Vélocité faible (<1/semaine) (-10)';
+      } else {
+        scoreDetails.velocity = 'Vélocité correcte (0)';
+      }
+    }
+    // 5. Historique d'écarts importants
+    if (typeof correctionPct === 'number' && Math.abs(correctionPct) > 20) {
+      confidenceScore -= 10;
+      scoreDetails.history = 'Historique d\'écarts importants (-10)';
+    } else {
+      scoreDetails.history = 'Historique stable (0)';
+    }
+    // Clamp
+    confidenceScore = Math.max(10, Math.min(100, confidenceScore));
 
-    return NextResponse.json({ output, confidenceScore })
+    // Appliquer le correctif automatique à l'estimation totale si besoin
+    let totalEstimation = durations.reduce((sum, d) => sum + (d || 0), 0);
+    let correctedEstimation = totalEstimation;
+    if (correctionPct !== 0) {
+      correctedEstimation = Math.round(totalEstimation * (1 + correctionPct / 100));
+    }
+
+    return NextResponse.json({ output, confidenceScore, tendance, correctionPct, totalEstimation, correctedEstimation, scoreDetails })
   } catch (error) {
     return NextResponse.json(
       { error: 'Invalid request' },
