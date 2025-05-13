@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface StepLayoutProps {
-  title: string;
+  title: React.ReactNode;
   id: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
