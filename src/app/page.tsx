@@ -202,22 +202,22 @@ export default function Home() {
       <StepNav steps={navSteps} />
       <main className="max-w-screen-lg mx-auto px-6 py-10 space-y-12">
         <StepLayout id="saisie" title="🧾 Saisie & contexte" icon={<FaRegFileAlt />}>
-          {/* Saisie & contexte : description, date, capacité, vélocité, dépendances, risques, bouton analyser */}
+          <>{/* Saisie & contexte : description, date, capacité, vélocité, dépendances, risques, bouton analyser */}</>
         </StepLayout>
         <StepLayout id="decoupage" title="🔍 Découpage & estimation" icon={<FaRegListAlt />}>
-          {/* Découpage & estimation : tableau tâches, total, buffer, pondération IA */}
+          <>{/* Découpage & estimation : tableau tâches, total, buffer, pondération IA */}</>
         </StepLayout>
         <StepLayout id="livraison" title="📆 Livraison & scoring" icon={<FaRegCalendarAlt />}>
-          {/* Livraison & scoring : date, score de confiance, détails */}
+          <>{/* Livraison & scoring : date, score de confiance, détails */}</>
         </StepLayout>
         <StepLayout id="resultat" title="📄 Résultat / conclusion" icon={<FaRegCheckCircle />}>
-          {/* Résultat : texte généré, correctif IA, export PDF */}
+          <>{/* Résultat : texte généré, correctif IA, export PDF */}</>
         </StepLayout>
         <StepLayout id="feedback" title="💬 Feedback & historique" icon={<FaRegCommentDots />}>
-          {/* Feedback : NPS, commentaire, historique */}
+          <>{/* Feedback : NPS, commentaire, historique */}</>
         </StepLayout>
         <StepLayout id="exports" title="🗂️ Exports" icon={<FaRegFolderOpen />}>
-          {/* Exports : ExportCenter, boutons exports */}
+          <>{/* Exports : ExportCenter, boutons exports */}</>
         </StepLayout>
       </main>
     </div>
