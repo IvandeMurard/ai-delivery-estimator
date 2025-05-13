@@ -211,7 +211,44 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       correctedEstimation = Math.round(totalEstimation * (1 + correctionPct / 100));
     }
 
-    return NextResponse.json({ output, confidenceScore, tendance, correctionPct, totalEstimation, correctedEstimation, scoreDetails })
+    // Extraction robuste des tâches (exemple, à adapter selon ton parsing)
+    const tasks = [];
+    const lines = output.split(/\n|\r/);
+    for (const l of lines) {
+      const match = l.match(/^\s*(?:\d+\.|-)\s*([^:]+):\s*(\d+)\s*jours?/i);
+      if (match) {
+        tasks.push({
+          name: match[1].trim(),
+          days: parseInt(match[2], 10),
+          tool: "" // ou extraire l'outil si tu le veux
+        });
+      }
+    }
+    const totalDays = tasks.reduce((sum, t) => sum + (t.days || 0), 0);
+
+    // Extraction de la date de livraison estimée
+    const dateMatch = output.match(/date de livraison estimée\s*[:\-–]?\s*([\w\d\/\-]+)/i);
+    const deliveryDate = dateMatch ? dateMatch[1] : "";
+
+    // Correction IA (exemple)
+    const aiCorrection = correctionPct ? `${correctionPct > 0 ? "+" : ""}${correctionPct.toFixed(1)}% pour marge historique` : "";
+
+    // Conclusion IA (texte brut)
+    const aiText = output;
+
+    // Score details (déjà calculé plus haut)
+    const scoreDetailsArr = Object.entries(scoreDetails).map(([label, value]) => ({ label, value }));
+
+    return NextResponse.json({
+      tasks,
+      totalDays,
+      buffer: 2, // ou calculé selon dépendances
+      deliveryDate,
+      confidenceScore,
+      scoreDetails: scoreDetailsArr,
+      aiCorrection,
+      aiText
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Invalid request' },
