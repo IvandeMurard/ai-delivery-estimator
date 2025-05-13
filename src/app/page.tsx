@@ -33,31 +33,22 @@ export default function Home() {
   const [dependencies, setDependencies] = useState<string>("");
   const [risks, setRisks] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisDone, setAnalysisDone] = useState(false);
 
-  // Découpage & estimation (mock)
-  const [tasks, setTasks] = useState([
-    { name: "Découper le backend", days: 2, tool: "GitHub" },
-    { name: "Créer l'UI", days: 3, tool: "Figma" },
-    { name: "Tests & QA", days: 1, tool: "Jest" },
-  ]);
-  const totalDays = tasks.reduce((sum, t) => sum + t.days, 0);
-  const buffer = dependencies.includes("critique") ? 2 : 0;
+  // Découpage & estimation (initialisé à vide)
+  const [tasks, setTasks] = useState([]);
+  const [totalDays, setTotalDays] = useState(0);
+  const [buffer, setBuffer] = useState(0);
 
-  // Livraison & scoring (mock)
-  const [deliveryDate, setDeliveryDate] = useState("15/07/2024");
-  const [confidenceScore, setConfidenceScore] = useState(82);
-  const [scoreDetails, setScoreDetails] = useState([
-    { label: "Dépendances critiques", value: -10 },
-    { label: "Vélocité historique", value: +20 },
-    { label: "Risques déclarés", value: -8 },
-    { label: "Capacité équipe", value: +5 },
-    { label: "Dispersion estimation", value: -5 },
-  ]);
+  // Livraison & scoring (initialisé à vide)
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [confidenceScore, setConfidenceScore] = useState(null);
+  const [scoreDetails, setScoreDetails] = useState([]);
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
-  // Résultat / conclusion (mock)
-  const [aiCorrection, setAiCorrection] = useState("+2 jours pour marge historique");
-  const [aiText, setAiText] = useState("L'estimation IA prend en compte la vélocité, la capacité, les dépendances et les risques pour fournir une date de livraison réaliste.");
+  // Résultat / conclusion (initialisé à vide)
+  const [aiCorrection, setAiCorrection] = useState("");
+  const [aiText, setAiText] = useState("");
 
   // Feedback & historique
   const [nps, setNps] = useState("");
@@ -73,10 +64,49 @@ export default function Home() {
   // Exports (mock)
   const exportReady = true;
 
+  // Handler analyse IA (appelle l'API et remplit dynamiquement les données)
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    try {
+      const res = await fetch("/api/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature,
+          startDate,
+          teamCapacity,
+          teamAbsences,
+          excludeWeekends,
+          velocitySource,
+          dependencies,
+          risks,
+        }),
+      });
+      const data = await res.json();
+      setTasks(data.tasks || []);
+      setTotalDays(data.totalDays || 0);
+      setBuffer(data.buffer || 0);
+      setDeliveryDate(data.deliveryDate || "");
+      setConfidenceScore(data.confidenceScore || null);
+      setScoreDetails(data.scoreDetails || []);
+      setAiCorrection(data.aiCorrection || "");
+      setAiText(data.aiText || "");
+    } catch (e) {
+      setAiText("Erreur lors de l'analyse IA.");
+      setTasks([]);
+      setTotalDays(0);
+      setDeliveryDate("");
+      setConfidenceScore(null);
+      setScoreDetails([]);
+      setAiCorrection("");
+    }
+    setIsAnalyzing(false);
+  };
+
   return (
     <div className="max-w-screen-md mx-auto space-y-8 px-2 sm:px-6 py-10">
       {/* Saisie & contexte */}
-      <StepLayout id="saisie" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegFileAlt /> Saisie & contexte</span>}>
+      <StepLayout id="saisie" stepNumber={1} title={<span>Saisie & contexte</span>} icon={<FaRegFileAlt />}>
         <div className="space-y-4">
           <div>
             <label className="block font-medium text-gray-800 mb-1">Description de la fonctionnalité *</label>
@@ -165,7 +195,7 @@ export default function Home() {
           <button
             className="mt-4 px-6 py-2 bg-blue-600 text-white rounded shadow disabled:opacity-50"
             disabled={isAnalyzing || !feature || !startDate}
-            onClick={() => setIsAnalyzing(true)}
+            onClick={handleAnalyze}
           >
             {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
           </button>
@@ -173,7 +203,7 @@ export default function Home() {
       </StepLayout>
 
       {/* Découpage & estimation */}
-      <StepLayout id="decoupage" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegListAlt /> Découpage & estimation</span>}>
+      <StepLayout id="decoupage" stepNumber={2} title={<span>Découpage & estimation</span>} icon={<FaRegListAlt />}> 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-gray-800">
             <thead>
@@ -184,13 +214,17 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {tasks.map((t, i) => (
-                <tr key={i} className="border-b">
-                  <td className="py-2">{t.name}</td>
-                  <td className="py-2">{t.days}</td>
-                  <td className="py-2">{t.tool}</td>
-                </tr>
-              ))}
+              {tasks.length === 0 ? (
+                <tr><td colSpan={3} className="text-center text-gray-400 italic">Aucune tâche générée. Lancez l'analyse IA.</td></tr>
+              ) : (
+                tasks.map((t, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="py-2">{t.name}</td>
+                    <td className="py-2">{t.days}</td>
+                    <td className="py-2">{t.tool}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           <div className="mt-4 font-bold text-right text-gray-800">
@@ -200,22 +234,27 @@ export default function Home() {
       </StepLayout>
 
       {/* Livraison & scoring */}
-      <StepLayout id="livraison" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegCalendarAlt /> Livraison & scoring</span>}>
+      <StepLayout id="livraison" stepNumber={3} title={<span>Livraison & scoring</span>} icon={<FaRegCalendarAlt />}> 
         <div className="space-y-2 text-gray-800">
           <div>
-            <span className="font-semibold">Date de livraison estimée :</span> {deliveryDate}
+            <span className="font-semibold">Date de livraison estimée :</span> {deliveryDate || <span className="text-gray-400 italic">Non calculée</span>}
           </div>
           <div className="flex items-center gap-3">
             <span className="font-semibold">Score de confiance IA :</span>
-            <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">{confidenceScore}%</span>
+            {confidenceScore !== null ? (
+              <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">{confidenceScore}%</span>
+            ) : (
+              <span className="text-gray-400 italic">Non calculé</span>
+            )}
             <button
               className="text-xs underline text-blue-600"
               onClick={() => setShowScoreDetails(v => !v)}
+              disabled={scoreDetails.length === 0}
             >
               {showScoreDetails ? "Masquer les détails" : "Détails"}
             </button>
           </div>
-          {showScoreDetails && (
+          {showScoreDetails && scoreDetails.length > 0 && (
             <ul className="ml-4 list-disc text-sm">
               {scoreDetails.map((f, i) => (
                 <li key={i}>{f.label} <span className="ml-2 font-mono">{f.value > 0 ? "+" : ""}{f.value}</span></li>
@@ -226,16 +265,16 @@ export default function Home() {
       </StepLayout>
 
       {/* Résultat / conclusion */}
-      <StepLayout id="resultat" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegCheckCircle /> Résultat / conclusion</span>}>
+      <StepLayout id="resultat" stepNumber={4} title={<span>Résultat / conclusion</span>} icon={<FaRegCheckCircle />}> 
         <div className="space-y-2 text-gray-800">
-          <div>{aiText}</div>
-          <div className="text-sm text-orange-600">{aiCorrection}</div>
-          <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded shadow">Exporter en PDF</button>
+          <div>{aiText || <span className="text-gray-400 italic">Aucune conclusion générée. Lancez l'analyse IA.</span>}</div>
+          {aiCorrection && <div className="text-sm text-orange-600">{aiCorrection}</div>}
+          <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded shadow" disabled={aiText === ""}>Exporter en PDF</button>
         </div>
       </StepLayout>
 
       {/* Feedback & historique */}
-      <StepLayout id="feedback" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegCommentDots /> Feedback & historique</span>}>
+      <StepLayout id="feedback" stepNumber={5} title={<span>Feedback & historique</span>} icon={<FaRegCommentDots />}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <label className="font-medium text-gray-800">Votre note (NPS) :</label>
@@ -274,7 +313,7 @@ export default function Home() {
       </StepLayout>
 
       {/* Exports */}
-      <StepLayout id="exports" title={<span className="flex items-center gap-2 text-xl font-semibold text-gray-800"><FaRegFolderOpen /> Exports</span>}>
+      <StepLayout id="exports" stepNumber={6} title={<span>Exports</span>} icon={<FaRegFolderOpen />}>
         <ExportCenter enabled={exportReady} />
       </StepLayout>
     </div>
