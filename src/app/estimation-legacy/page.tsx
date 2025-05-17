@@ -163,10 +163,13 @@ export default function EstimationLegacy() {
         </h1>
       </div>
       <div className="grid grid-cols-4 gap-4 px-6 py-8 max-w-[1600px] mx-auto">
-        {/* Colonne 1 : Saisie & Découpage */}
+        {/* 1. Saisie & contexte */}
         <div className="flex flex-col gap-3">
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-blue-900 mb-2">Saisie & contexte</div>
+            <div className="flex items-center mb-2">
+              <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">1</span>
+              <span className="text-base font-bold text-blue-900 ml-2">Saisie & contexte</span>
+            </div>
             <label className="block font-semibold text-gray-800 mb-1 text-sm">Décrire la fonctionnalité</label>
             <textarea className="rounded border px-2 py-1 w-full text-sm text-gray-800 bg-white mb-2" rows={3} value={feature} onChange={e => setFeature(e.target.value)} placeholder="Ex : Authentification Google, dashboard, etc." required />
             <label className="block font-semibold text-gray-800 mb-1 text-sm">Date de démarrage</label>
@@ -176,18 +179,22 @@ export default function EstimationLegacy() {
             </button>
             {errorMsg && <div className="mt-2 text-red-600 text-xs">{errorMsg}</div>}
           </div>
+          {/* 2. Découpage des tâches techniques */}
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-blue-900 mb-2">Découpage proposé</div>
-            <ul className="mb-2">
+            <div className="flex items-center mb-2">
+              <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">2</span>
+              <span className="text-base font-bold text-blue-900 ml-2">Découpage des tâches techniques</span>
+            </div>
+            <ol className="mb-2 list-decimal list-inside text-sm">
               {manualTasks.map((t, i) => (
-                <li key={i} className="flex items-center justify-between bg-gray-50 rounded px-2 py-1 mb-1 text-sm">
-                  <span className="truncate">{t}</span>
+                <li key={i} className="flex items-center justify-between bg-gray-50 rounded px-2 py-1 mb-1">
+                  <span className="truncate flex-1">{t}</span>
                   {!isDecoupageValidated && (
                     <button className="text-red-500 ml-2 text-xs" onClick={() => handleRemoveTask(i)} title="Supprimer">✖</button>
                   )}
                 </li>
               ))}
-            </ul>
+            </ol>
             {!isDecoupageValidated && (
               <div className="flex gap-2 mb-2">
                 <input className="rounded border px-2 py-1 flex-1 text-sm" value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Ajouter une tâche..." onKeyDown={e => { if (e.key === 'Enter') handleAddTask(); }} />
@@ -200,25 +207,28 @@ export default function EstimationLegacy() {
             </div>
           </div>
         </div>
-        {/* Colonne 2 : Analyse IA & Estimation */}
+        {/* 3. Tâches techniques & Livraison estimée */}
         <div className="flex flex-col gap-3">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-blue-900 mb-2">Analyse IA</div>
-            <div className="text-xs text-gray-700 mb-2">Pour estimer les délais de livraison, la fonctionnalité est découpée en tâches techniques. Lance l'analyse IA pour obtenir l'estimation.</div>
-            <div className="text-base font-bold text-blue-900 mb-2">Tâches techniques</div>
+            <div className="flex items-center mb-2">
+              <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">3</span>
+              <span className="text-base font-bold text-blue-900 ml-2">Tâches techniques</span>
+            </div>
             <table className="w-full text-xs text-gray-800 mb-2">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-1 font-semibold">Tâches</th>
+                  <th className="text-left py-1 font-semibold">#</th>
+                  <th className="text-left py-1 font-semibold">Tâche</th>
                   <th className="text-left py-1 font-semibold">Estimation</th>
                 </tr>
               </thead>
               <tbody>
                 {tasks.length === 0 ? (
-                  <tr><td colSpan={2} className="text-center text-gray-400 italic py-2">Veuillez lancer l'analyse IA.</td></tr>
+                  <tr><td colSpan={3} className="text-center text-gray-400 italic py-2">Veuillez lancer l'analyse IA.</td></tr>
                 ) : (
                   tasks.map((t, i) => (
                     <tr key={i} className="border-b">
+                      <td className="py-1 font-mono text-gray-500">{i + 1}</td>
                       <td className="py-1">{t.name}</td>
                       <td className="py-1">{t.days} jours</td>
                     </tr>
@@ -227,13 +237,17 @@ export default function EstimationLegacy() {
               </tbody>
             </table>
             <div className="mt-1 font-bold text-right text-blue-900 text-sm">
-              Total estimé : {totalDays + buffer} jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
+              Total estimé : <span className="font-extrabold">{totalDays + buffer}</span> jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
             </div>
           </div>
+          {/* 4. Livraison estimée */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-green-900 mb-2">Livraison estimée</div>
-            <div className="text-lg font-bold text-green-700">{deliveryDate || <span className="text-gray-400 italic">-</span>}</div>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="flex items-center mb-2">
+              <span className="bg-green-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">4</span>
+              <span className="text-base font-bold text-green-900 ml-2">Livraison estimée</span>
+            </div>
+            <div className="text-lg font-bold text-green-700 mb-1">{deliveryDate || <span className="text-gray-400 italic">-</span>}</div>
+            <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-gray-800 text-sm">Score de confiance IA :</span>
               {confidenceScore !== null ? (
                 <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold text-xs">{confidenceScore}%</span>
@@ -253,13 +267,20 @@ export default function EstimationLegacy() {
             )}
           </div>
         </div>
-        {/* Colonne 3 : Conclusion */}
+        {/* 5. Conclusion */}
         <div className="flex flex-col gap-3">
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm h-full flex flex-col">
-            <div className="text-base font-bold text-blue-900 mb-2">Conclusion</div>
+            <div className="flex items-center mb-2">
+              <span className="bg-blue-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">5</span>
+              <span className="text-base font-bold text-blue-900 ml-2">Conclusion</span>
+            </div>
             <div className="text-sm text-gray-800 mb-2 flex-1">
               {aiText ? (
-                <div>{aiText}</div>
+                <div className="space-y-2">
+                  {aiText.split('\n').map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
               ) : (
                 <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
               )}
@@ -268,10 +289,13 @@ export default function EstimationLegacy() {
             <button className="w-full bg-green-600 text-white font-bold rounded py-2 text-sm mt-3" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
           </div>
         </div>
-        {/* Colonne 4 : Feedback & Exports */}
+        {/* 6. Feedback & Historique + 7. Exports */}
         <div className="flex flex-col gap-3">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-yellow-700 mb-2">Feedback & historique</div>
+            <div className="flex items-center mb-2">
+              <span className="bg-yellow-500 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">6</span>
+              <span className="text-base font-bold text-yellow-700 ml-2">Feedback & historique</span>
+            </div>
             <div className="flex items-center gap-2 mb-2">
               <label className="font-semibold text-gray-800 text-sm">Votre note (NPS) :</label>
               <input type="number" min={0} max={10} className="w-12 text-center text-sm border rounded" value={nps} onChange={e => setNps(e.target.value)} />
@@ -290,7 +314,10 @@ export default function EstimationLegacy() {
             )}
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div className="text-base font-bold text-gray-700 mb-2">Exports</div>
+            <div className="flex items-center mb-2">
+              <span className="bg-gray-400 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">7</span>
+              <span className="text-base font-bold text-gray-700 ml-2">Exports</span>
+            </div>
             <div className="inline-flex gap-2 flex-wrap">
               <button className="bg-gray-200 text-gray-700 rounded px-3 py-1 text-xs font-semibold hover:bg-gray-300" disabled={!exportReady}>Exporter Notion</button>
               <button className="bg-gray-200 text-gray-700 rounded px-3 py-1 text-xs font-semibold hover:bg-gray-300" disabled={!exportReady}>Exporter PDF</button>
