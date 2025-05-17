@@ -155,6 +155,38 @@ export default function EstimationLegacy() {
     setIsAnalyzing(false);
   };
 
+  // Ajout : calcul local de la date de livraison estimée si pas d'IA
+  function calculerDateLivraison(startDate: string, totalJours: number) {
+    if (!startDate || !totalJours) return "-";
+    const d = new Date(startDate);
+    let joursRestants = totalJours;
+    while (joursRestants > 0) {
+      d.setDate(d.getDate() + 1);
+      // Exclure week-ends
+      if (excludeWeekends && (d.getDay() === 0 || d.getDay() === 6)) continue;
+      joursRestants--;
+    }
+    return d.toLocaleDateString();
+  }
+
+  // Utilisation du découpage manuel si pas d'IA
+  const showManualTasks = isDecoupageValidated && (tasks.length === 0);
+  const effectiveTasks = showManualTasks ? manualTasks.map((name) => ({ name, days: 1, tool: '' })) : tasks;
+  const effectiveTotalDays = showManualTasks ? manualTasks.length : totalDays + buffer;
+  const effectiveDeliveryDate = showManualTasks ? calculerDateLivraison(startDate, manualTasks.length) : deliveryDate;
+
+  // Génération d'une conclusion synthétique sans liste de tâches
+  function getConclusion() {
+    if (!feature) return '';
+    let txt = `Le développement de la fonctionnalité "${feature}" est estimé à un total de ${effectiveTotalDays} jours ouvrables.`;
+    if (effectiveDeliveryDate && effectiveDeliveryDate !== '-') {
+      txt += `\nLa date de livraison réaliste serait autour du ${effectiveDeliveryDate}.`;
+    }
+    txt += '\nCette estimation prend en compte la capacité de l\'équipe, les absences, les dépendances et les risques déclarés.';
+    txt += '\nPensez à prévoir une marge pour les imprévus.';
+    return txt;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex flex-col gap-2 px-6 pt-8 pb-4 max-w-[1600px] mx-auto">
@@ -174,6 +206,35 @@ export default function EstimationLegacy() {
             <textarea className="rounded border px-2 py-1 w-full text-sm text-gray-800 bg-white mb-2" rows={3} value={feature} onChange={e => setFeature(e.target.value)} placeholder="Ex : Authentification Google, dashboard, etc." required />
             <label className="block font-semibold text-gray-800 mb-1 text-sm">Date de démarrage</label>
             <input type="date" className="rounded border px-2 py-1 w-full text-sm text-gray-800 bg-white mb-2" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+            <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex-1 min-w-[120px]">
+                <label className="block font-semibold text-gray-800 mb-1 text-xs">Capacité équipe (%)</label>
+                <input type="number" min={0} max={100} className="rounded border px-2 py-1 w-full text-xs text-gray-800 bg-white" value={teamCapacity} onChange={e => setTeamCapacity(Number(e.target.value))} />
+              </div>
+              <div className="flex-1 min-w-[120px]">
+                <label className="block font-semibold text-gray-800 mb-1 text-xs">Jours d'absence</label>
+                <input type="number" min={0} className="rounded border px-2 py-1 w-full text-xs text-gray-800 bg-white" value={teamAbsences} onChange={e => setTeamAbsences(Number(e.target.value))} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <input type="checkbox" checked={excludeWeekends} onChange={e => setExcludeWeekends(e.target.checked)} id="weekends" />
+              <label htmlFor="weekends" className="text-gray-800 text-xs">Exclure les week-ends</label>
+            </div>
+            <label className="block font-semibold text-gray-800 mb-1 text-xs">Source de vélocité</label>
+            <select className="rounded border px-2 py-1 w-full text-xs text-gray-800 bg-white mb-2" value={velocitySource} onChange={e => setVelocitySource(e.target.value)}>
+              <option value="github">GitHub</option>
+              <option value="trello">Trello</option>
+            </select>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex-1 min-w-[180px]">
+                <label className="block font-semibold text-gray-800 mb-1 text-xs">Dépendances</label>
+                <input className="rounded border px-2 py-1 w-full text-xs text-gray-800 bg-white" value={dependencies} onChange={e => setDependencies(e.target.value)} placeholder="Ex : API externe, équipe data, etc." />
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <label className="block font-semibold text-gray-800 mb-1 text-xs">Risques</label>
+                <input className="rounded border px-2 py-1 w-full text-xs text-gray-800 bg-white" value={risks} onChange={e => setRisks(e.target.value)} placeholder="Ex : instabilité API, dette technique, etc." />
+              </div>
+            </div>
             <button className="w-full bg-blue-600 text-white font-bold rounded py-2 text-sm mt-2" disabled={isAnalyzing || !feature || !startDate} onClick={handleAnalyze}>
               {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
             </button>
@@ -223,21 +284,21 @@ export default function EstimationLegacy() {
                 </tr>
               </thead>
               <tbody>
-                {tasks.length === 0 ? (
-                  <tr><td colSpan={3} className="text-center text-gray-400 italic py-2">Veuillez lancer l'analyse IA.</td></tr>
+                {effectiveTasks.length === 0 ? (
+                  <tr><td colSpan={3} className="text-center text-gray-400 italic py-2">Veuillez lancer l'analyse IA ou valider le découpage.</td></tr>
                 ) : (
-                  tasks.map((t, i) => (
+                  effectiveTasks.map((t, i) => (
                     <tr key={i} className="border-b">
                       <td className="py-1 font-mono text-gray-500">{i + 1}</td>
-                      <td className="py-1">{t.name}</td>
-                      <td className="py-1">{t.days} jours</td>
+                      <td className="py-1">{t.name || t}</td>
+                      <td className="py-1">{t.days ? `${t.days} jours` : '1 jour'}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
             <div className="mt-1 font-bold text-right text-blue-900 text-sm">
-              Total estimé : <span className="font-extrabold">{totalDays + buffer}</span> jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
+              Total estimé : <span className="font-extrabold">{effectiveTotalDays}</span> jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
             </div>
           </div>
           {/* 4. Livraison estimée */}
@@ -246,7 +307,7 @@ export default function EstimationLegacy() {
               <span className="bg-green-600 text-white w-7 h-7 flex items-center justify-center rounded-full font-bold text-sm">4</span>
               <span className="text-base font-bold text-green-900 ml-2">Livraison estimée</span>
             </div>
-            <div className="text-lg font-bold text-green-700 mb-1">{deliveryDate || <span className="text-gray-400 italic">-</span>}</div>
+            <div className="text-lg font-bold text-green-700 mb-1">{effectiveDeliveryDate || <span className="text-gray-400 italic">-</span>}</div>
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-gray-800 text-sm">Score de confiance IA :</span>
               {confidenceScore !== null ? (
@@ -275,9 +336,9 @@ export default function EstimationLegacy() {
               <span className="text-base font-bold text-blue-900 ml-2">Conclusion</span>
             </div>
             <div className="text-sm text-gray-800 mb-2 flex-1">
-              {aiText ? (
+              {feature ? (
                 <div className="space-y-2">
-                  {aiText.split('\n').map((p, i) => (
+                  {getConclusion().split('\n').map((p, i) => (
                     <p key={i}>{p}</p>
                   ))}
                 </div>
@@ -286,7 +347,7 @@ export default function EstimationLegacy() {
               )}
               {aiCorrection && <div className="text-xs text-orange-600 mt-1">{aiCorrection}</div>}
             </div>
-            <button className="w-full bg-green-600 text-white font-bold rounded py-2 text-sm mt-3" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
+            <button className="w-full bg-green-600 text-white font-bold rounded py-2 text-sm mt-3" disabled={feature === ""}>Exporter la conclusion en PDF</button>
           </div>
         </div>
         {/* 6. Feedback & Historique + 7. Exports */}
