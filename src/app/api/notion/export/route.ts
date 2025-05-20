@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { Client } from '@notionhq/client'
+import type { CreatePageParameters } from '@notionhq/client'
 import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     const totalDays = result.match(/total de (\d+) jours?/i)?.[1]
 
     // Ajout de la priorité dans les propriétés
-    const properties: Record<string, unknown> = {
+    const properties: CreatePageParameters['properties'] = {
       Name: {
         title: [
           {
