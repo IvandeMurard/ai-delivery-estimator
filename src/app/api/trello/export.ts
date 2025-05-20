@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Aucune tâche ou liste à exporter.' }, { status: 400 });
     }
     // Pour chaque tâche, créer une carte Trello
-    await Promise.all(tasks.map(async (task: { name: string; duration?: number; estimation?: number; deliveryDate?: string; }) => {
+    await Promise.all(tasks.map(async (task: { name: string; titre?: string; title?: string; duration?: number; estimation?: number; deliveryDate?: string; }) => {
       const name = task.name || task.titre || task.title || 'Tâche';
       const desc = `Durée estimée : ${task.duration || task.estimation || '—'}\nDate de livraison : ${task.deliveryDate || ''}`;
       const url = `https://api.trello.com/1/cards?key=${TRELLO_API_KEY}&token=${TRELLO_TOKEN}`;
