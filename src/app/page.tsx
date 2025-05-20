@@ -46,7 +46,6 @@ export default function EstimationLegacy() {
   const [showScoreDetails, setShowScoreDetails] = useState(false);
 
   // Résultat / conclusion (initialisé à vide)
-  const [aiCorrection, setAiCorrection] = useState("");
   const [aiText, setAiText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -109,7 +108,6 @@ export default function EstimationLegacy() {
       setDeliveryDate(data.deliveryDate || "");
       setConfidenceScore(data.confidenceScore || null);
       setScoreDetails(data.scoreDetails || []);
-      setAiCorrection(data.aiCorrection || "");
       setAiText(data.aiText || "");
     } catch {
       setErrorMsg("Erreur lors de l'analyse IA. Veuillez réessayer.");
@@ -118,7 +116,6 @@ export default function EstimationLegacy() {
       setDeliveryDate("");
       setConfidenceScore(null);
       setScoreDetails([]);
-      setAiCorrection("");
       setAiText("");
     }
     setIsAnalyzing(false);
@@ -167,7 +164,7 @@ export default function EstimationLegacy() {
   // Calcule la date de livraison estimée (exclut week-ends et jours fériés)
   function computeDeliveryDate(start: string, days: number, excludeWeekends: boolean = true): string {
     if (!start || days <= 0) return '';
-    let date = new Date(start);
+    const date = new Date(start);
     let added = 0;
     const holidays = getFrenchHolidays(date.getFullYear());
     while (added < days) {
