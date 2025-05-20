@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Client } from '@notionhq/client'
 
 const NOTION_CLIENT_ID = process.env.NOTION_CLIENT_ID
 const NOTION_CLIENT_SECRET = process.env.NOTION_CLIENT_SECRET

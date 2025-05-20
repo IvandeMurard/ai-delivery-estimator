@@ -163,7 +163,7 @@ export default function EstimationLegacy() {
               <span className="text-lg font-bold text-blue-900">Analyse IA</span>
             </div>
             <div className="text-[#444] text-[13px] mb-1">
-              Pour estimer les délais de livraison de la fonctionnalité <b>&quot;{feature || '...' }&quot;</b>, nous devons d'abord découper cette fonctionnalité en plusieurs tâches techniques. Voici une décomposition possible :
+              Pour estimer les délais de livraison de la fonctionnalité <b>&apos;{feature || '...' }&apos;</b>, nous devons d'abord découper cette fonctionnalité en plusieurs tâches techniques. Voici une décomposition possible :
             </div>
           </div>
           <div className="bg-blue-50 rounded-lg border border-blue-100 shadow-none p-4">

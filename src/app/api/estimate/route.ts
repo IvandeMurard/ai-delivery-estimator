@@ -152,7 +152,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     }).filter(Boolean);
     const nbTasks = durations.length;
     let confidenceScore = 80;
-    let scoreDetails: Record<string, string> = {};
+    const scoreDetails: Record<string, string> = {};
     // 1. Dispersion des durées
     if (durations.length > 1) {
       const min = Math.min(...durations);

@@ -91,7 +91,7 @@ export const ConclusionPDF = ({ conclusionText, advancedSection }: ConclusionPDF
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Conclusion de l'estimation</Text>
+        <Text style={styles.title}>Conclusion de l&apos;estimation</Text>
         {/* Tableau des tâches techniques */}
         {tasks.length > 0 && (
           <View style={styles.section}>
