@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks } = body
+    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks, sector, stack, clientType, constraints } = body
 
     // Détermine la date de départ à utiliser dans le prompt
     const startDatePrompt = startDate
@@ -58,6 +58,11 @@ export async function POST(request: NextRequest) {
     if (typeof risks === 'string' && risks.trim().length > 0) {
       risksPrompt = `\nRisques identifiés : ${risks.trim()}\nMerci d'en tenir compte pour ajuster la confiance et la date de livraison.`;
     }
+
+    const sectorPrompt = sector ? `\nSecteur d'activité : ${sector}` : '';
+    const stackPrompt = stack ? `\nStack technique : ${stack}` : '';
+    const clientTypePrompt = clientType ? `\nType de client : ${clientType}` : '';
+    const constraintsPrompt = constraints ? `\nContraintes spécifiques : ${constraints}` : '';
 
     // Lecture des feedbacks et calcul de l'écart moyen
     let feedbackPhrase = '';
@@ -111,7 +116,7 @@ ${startDatePrompt}
 ${velocityPrompt}
 ${teamPrompt}
 ${priorityPrompt}
-${dependenciesPrompt}${risksPrompt}
+${dependenciesPrompt}${risksPrompt}${sectorPrompt}${stackPrompt}${clientTypePrompt}${constraintsPrompt}
 ${feedbackPhrase}
 
 Découpe la fonctionnalité en tâches techniques avec estimation.
