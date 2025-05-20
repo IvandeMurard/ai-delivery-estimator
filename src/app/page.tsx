@@ -308,7 +308,7 @@ export default function EstimationLegacy() {
               </thead>
               <tbody>
                 {tasks.length === 0 ? (
-                  <tr><td colSpan={2} className="text-center text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</td></tr>
+                  <tr><td colSpan={2} className="text-center text-gray-400 italic">Veuillez l&apos;analyse IA.</td></tr>
                 ) : (
                   tasks.map((t, i) => (
                     <tr key={i} className="border-b">
@@ -341,7 +341,7 @@ export default function EstimationLegacy() {
               {totalDays > 0 ? (
                 <pre className="whitespace-pre-wrap text-[13px] text-blue-900 font-medium">{getConclusionSynth()}</pre>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez l&apos;analyse IA.</span>
               )}
             </div>
             <button className="mt-1 px-3 py-1.5 bg-green-600 text-white rounded shadow-sm font-bold text-[14px]" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
@@ -355,7 +355,7 @@ export default function EstimationLegacy() {
               {getTotalWithBuffer() > 0 && startDate ? (
                 <span>Livraison estimée : <span className="text-green-600">{deliveryDate}</span></span>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez l&apos;analyse IA.</span>
               )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-[13px]">
@@ -363,7 +363,7 @@ export default function EstimationLegacy() {
               {confidenceScore !== null ? (
                 <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">{confidenceScore}%</span>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez l&apos;analyse IA.</span>
               )}
               <button className="text-xs underline text-blue-600" onClick={() => setShowScoreDetails(v => !v)} disabled={scoreDetails.length === 0}>
                 {showScoreDetails ? "Masquer les détails" : "Détails"}
