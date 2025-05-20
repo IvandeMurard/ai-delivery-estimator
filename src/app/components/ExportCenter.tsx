@@ -21,7 +21,7 @@ export default function ExportCenter({ tasks, result, feature, startDate, notion
   // PDF
   const pdfButton = (
     <PDFDownloadLink
-      document={<EstimationPDF feature={feature} tasks={tasks} result={result} startDate={startDate} />}
+      document={<EstimationPDF feature={feature} tasks={tasks.map(t => t.name)} result={result} startDate={startDate} />}
       fileName="estimation.pdf"
       className="bg-white border px-4 py-2 rounded shadow text-sm hover:bg-gray-50 flex items-center gap-2 justify-center"
     >
