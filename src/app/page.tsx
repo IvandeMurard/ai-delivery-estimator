@@ -102,6 +102,32 @@ export default function EstimationLegacy() {
     setIsAnalyzing(false);
   };
 
+  // Fonction utilitaire pour le total avec buffer
+  function getTotalWithBuffer() {
+    return totalDays + buffer;
+  }
+
+  // Génère la conclusion synthétique pour la section 4 (modèle strict docs/ui-reference.md)
+  function getConclusionSynth() {
+    if (!feature || !totalDays) return '';
+    const totalWithBuffer = getTotalWithBuffer();
+    const bufferPct = totalDays > 0 ? Math.round(buffer / totalDays * 100) : 0;
+    // Format date JJ/MM/AAAA
+    function formatDateFR(dateStr: string) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR');
+    }
+    let txt = `Le développement de la fonctionnalité est estimé à ${totalWithBuffer} jours ouvrés`;
+    if (buffer > 0) txt += ` (incluant un buffer de sécurité de ${bufferPct}%)`;
+    txt += ".";
+    if (deliveryDate && deliveryDate !== '-') {
+      txt += `\nLa date de livraison réaliste serait autour du ${formatDateFR(deliveryDate)}.`;
+    }
+    txt += "\nCette estimation prend en compte la capacité de l'équipe, les absences, les dépendances et les risques déclarés.";
+    return txt;
+  }
+
   return (
     <div className="w-full min-h-screen bg-gray-50 px-1 py-4 font-sans">
       <div className="flex flex-col gap-1 mb-4">
@@ -109,6 +135,9 @@ export default function EstimationLegacy() {
         <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2 tracking-tight">
           <span role="img" aria-label="bulb">💡</span> Estimation par IA (Version Legacy)
         </h1>
+        <div className="text-[13px] text-gray-500 mt-1 mb-2">
+          Pour garantir la confidentialité de vos informations, une anonymisation contextuelle forte par IA est automatiquement réalisée.
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 w-full">
         {/* Colonne 1 : Saisie & contexte */}
@@ -191,8 +220,14 @@ export default function EstimationLegacy() {
                 )}
               </tbody>
             </table>
-            <div className="mt-2 font-bold text-right text-blue-900 text-[14px]">
-              Total estimé : {totalDays + buffer} jours {buffer > 0 && <span className="text-xs text-orange-500">(buffer inclus)</span>}
+            <div className="mt-2 text-right text-blue-900 text-[14px]">
+              <div> Total brut : <span className="font-bold">{totalDays}</span> jours</div>
+              {buffer > 0 && (
+                <div> Buffer de sécurité ({totalDays > 0 ? Math.round(buffer / totalDays * 100) : 0}%): <span className="font-bold text-orange-600">+{buffer}</span> jours</div>
+              )}
+              <div className="font-extrabold text-2xl mt-2 text-blue-800">
+                Total estimé avec buffer : <span className="text-green-600">{getTotalWithBuffer()}</span> jours
+              </div>
             </div>
           </div>
         </div>
@@ -204,12 +239,11 @@ export default function EstimationLegacy() {
               <span className="text-lg font-bold text-blue-900">Conclusion</span>
             </div>
             <div className="text-[#444] text-[13px] mb-1">
-              {aiText ? (
-                <div>{aiText}</div>
+              {totalDays > 0 ? (
+                <pre className="whitespace-pre-wrap text-[13px] text-blue-900 font-medium">{getConclusionSynth()}</pre>
               ) : (
                 <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
               )}
-              {aiCorrection && <div className="text-xs text-orange-600">{aiCorrection}</div>}
             </div>
             <button className="mt-1 px-3 py-1.5 bg-green-600 text-white rounded shadow-sm font-bold text-[14px]" disabled={aiText === ""}>Exporter la conclusion en PDF</button>
           </div>
