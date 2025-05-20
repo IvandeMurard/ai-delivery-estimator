@@ -1,5 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
-
 export async function GET() {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const redirectUri = process.env.GITHUB_OAUTH_CALLBACK_URL;

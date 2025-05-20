@@ -89,7 +89,7 @@ export default function EstimationLegacy() {
       setScoreDetails(data.scoreDetails || []);
       setAiCorrection(data.aiCorrection || "");
       setAiText(data.aiText || "");
-    } catch (e) {
+    } catch {
       setErrorMsg("Erreur lors de l'analyse IA. Veuillez réessayer.");
       setTasks([]);
       setTotalDays(0);
@@ -163,7 +163,7 @@ export default function EstimationLegacy() {
               <span className="text-lg font-bold text-blue-900">Analyse IA</span>
             </div>
             <div className="text-[#444] text-[13px] mb-1">
-              Pour estimer les délais de livraison de la fonctionnalité &apos;{feature || '...' }&apos;, nous devons d'abord découper cette fonctionnalité en plusieurs tâches techniques. Voici une décomposition possible :
+              Pour estimer les délais de livraison de la fonctionnalité &apos;{feature || '...' }&apos;, nous devons d&apos;abord découper cette fonctionnalité en plusieurs tâches techniques. Voici une décomposition possible :
             </div>
           </div>
           <div className="bg-blue-50 rounded-lg border border-blue-100 shadow-none p-4">
@@ -180,7 +180,7 @@ export default function EstimationLegacy() {
               </thead>
               <tbody>
                 {tasks.length === 0 ? (
-                  <tr><td colSpan={2} className="text-center text-gray-400 italic">Veuillez lancer l'analyse IA.</td></tr>
+                  <tr><td colSpan={2} className="text-center text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</td></tr>
                 ) : (
                   tasks.map((t, i) => (
                     <tr key={i} className="border-b">
@@ -207,7 +207,7 @@ export default function EstimationLegacy() {
               {aiText ? (
                 <div>{aiText}</div>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
               )}
               {aiCorrection && <div className="text-xs text-orange-600">{aiCorrection}</div>}
             </div>
@@ -222,7 +222,7 @@ export default function EstimationLegacy() {
               {deliveryDate ? (
                 <span>Livraison estimée : <span className="text-green-600">{deliveryDate}</span></span>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
               )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-[13px]">
@@ -230,7 +230,7 @@ export default function EstimationLegacy() {
               {confidenceScore !== null ? (
                 <span className="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 font-bold">{confidenceScore}%</span>
               ) : (
-                <span className="text-gray-400 italic">Veuillez lancer l'analyse IA.</span>
+                <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
               )}
               <button className="text-xs underline text-blue-600" onClick={() => setShowScoreDetails(v => !v)} disabled={scoreDetails.length === 0}>
                 {showScoreDetails ? "Masquer les détails" : "Détails"}
