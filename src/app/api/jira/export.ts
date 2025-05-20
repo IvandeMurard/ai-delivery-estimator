@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       createdTickets.push({ key: data.key, url: `${baseUrl}/browse/${data.key}` });
     }
     return NextResponse.json({ success: true, tickets: createdTickets });
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Échec de l\'export JIRA.' }, { status: 500 });
   }
 } 

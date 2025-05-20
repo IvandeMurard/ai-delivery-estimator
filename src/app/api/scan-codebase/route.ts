@@ -16,12 +16,12 @@ async function scanDir(dir: string, base = ''): Promise<string[]> {
   return files;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const srcPath = path.join(process.cwd(), 'src');
   try {
     const structure = await scanDir(srcPath);
     return NextResponse.json({ structure });
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Erreur lors du scan du codebase.' }, { status: 500 });
   }
 } 

@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks, sector, stack, clientType, constraints } = body
+    const { feature, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks, sector, stack, clientType, constraints } = body
 
     // Détermine la date de départ à utiliser dans le prompt
     const startDatePrompt = startDate
@@ -150,7 +150,6 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       const d = m.match(/(\d+)\s*jours?/);
       return d ? parseInt(d[1], 10) : null;
     }).filter(Boolean);
-    const nbTasks = durations.length;
     let confidenceScore = 80;
     const scoreDetails: Record<string, string> = {};
     // 1. Dispersion des durées
@@ -247,7 +246,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       aiCorrection,
       aiText
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Invalid request' },
       { status: 400 }
