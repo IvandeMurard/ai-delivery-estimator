@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const cardsRes = await fetch(url);
   const cards = await cardsRes.json();
   // Ne garder que les cartes fermées avec une date de création et de fermeture
-  const closedCards = (Array.isArray(cards) ? cards : []).filter((c: any) => c.closed && c.dateLastActivity);
+  const closedCards = (Array.isArray(cards) ? cards : []).filter((c: { closed: boolean; dateLastActivity?: string }) => c.closed && c.dateLastActivity);
   if (closedCards.length === 0) {
     return NextResponse.json({ avgPerWeek: 0, avgDuration: 0, totalClosed: 0, weeksAnalyzed: 0 });
   }
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // https://help.trello.com/article/759-getting-the-time-a-card-or-board-was-created
     return new Date(parseInt(id.substring(0,8), 16) * 1000);
   }
-  const cardsWithDates = closedCards.map((c: any) => ({
+  const cardsWithDates = closedCards.map((c: { closed: boolean; dateLastActivity?: string }) => ({
     created_at: getCreatedAtFromId(c.id),
     closed_at: new Date(c.dateLastActivity)
   }));

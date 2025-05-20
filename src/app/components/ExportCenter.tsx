@@ -4,7 +4,7 @@ import { PDFDownloadLink } from '@react-pdf/renderer';
 import { EstimationPDF } from "./EstimationPDF";
 
 interface ExportCenterProps {
-  tasks: any[];
+  tasks: { name: string; duration?: number; estimation?: number }[];
   result: string;
   feature: string;
   startDate: string;
@@ -52,7 +52,7 @@ export default function ExportCenter({ tasks, result, feature, startDate, notion
   const handleExportCSV = () => {
     const csv = [
       ['Tâche', 'Estimation'],
-      ...tasks.map((t: any) => [t.name || t, t.duration || t.estimation || ''])
+      ...tasks.map((t) => [t.name || t, t.duration || t.estimation || ''])
     ].map(row => row.join(';')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

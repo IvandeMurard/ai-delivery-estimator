@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     let teamPrompt = '';
     if (Array.isArray(team) && team.length > 0) {
       teamPrompt = `\nComposition de l'équipe et capacité réelle :\n`;
-      team.forEach((m: any, idx: number) => {
+      team.forEach((m: { name?: string; percent?: number; comment?: string }, idx: number) => {
         teamPrompt += `- ${m.name ? m.name : 'Membre ' + (idx + 1)} : ${m.percent || 0}% du temps. ${m.comment ? 'Commentaires : ' + m.comment : ''}\n`;
       });
       if (totalCapacity !== undefined) {
@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
     // Dépendances et risques
     let dependenciesPrompt = '';
     if (Array.isArray(dependencies) && dependencies.length > 0) {
-      const crit = dependencies.filter((d: any) => d.level === 'critique');
-      const mod = dependencies.filter((d: any) => d.level === 'modérée');
-      const min = dependencies.filter((d: any) => d.level === 'mineure');
+      const crit = dependencies.filter((d: { name: string; level: string }) => d.level === 'critique');
+      const mod = dependencies.filter((d: { name: string; level: string }) => d.level === 'modérée');
+      const min = dependencies.filter((d: { name: string; level: string }) => d.level === 'mineure');
       dependenciesPrompt = `\nDépendances techniques à prendre en compte :\n`;
-      if (crit.length > 0) dependenciesPrompt += `- Critiques : ${crit.map((d: any) => d.name).join(', ')}\n`;
-      if (mod.length > 0) dependenciesPrompt += `- Modérées : ${mod.map((d: any) => d.name).join(', ')}\n`;
-      if (min.length > 0) dependenciesPrompt += `- Mineures : ${min.map((d: any) => d.name).join(', ')}\n`;
+      if (crit.length > 0) dependenciesPrompt += `- Critiques : ${crit.map((d: { name: string }) => d.name).join(', ')}\n`;
+      if (mod.length > 0) dependenciesPrompt += `- Modérées : ${mod.map((d: { name: string }) => d.name).join(', ')}\n`;
+      if (min.length > 0) dependenciesPrompt += `- Mineures : ${min.map((d: { name: string }) => d.name).join(', ')}\n`;
       dependenciesPrompt += `Merci d'ajouter un buffer de sécurité pour les dépendances critiques et de pondérer l'estimation selon le niveau de risque.`;
     }
     let risksPrompt = '';
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         const last = feedbacks.slice(-5); // 5 derniers
         let sumPct = 0;
         let count = 0;
-        last.forEach((f: any) => {
+        last.forEach((f: { estimation: number; realDuration: number }) => {
           const est = Number(f.estimation);
           const real = Number(f.realDuration);
           if (est > 0 && real > 0) {
@@ -152,7 +152,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     }).filter(Boolean);
     const nbTasks = durations.length;
     let confidenceScore = 80;
-    let scoreDetails: any = {};
+    let scoreDetails: Record<string, string> = {};
     // 1. Dispersion des durées
     if (durations.length > 1) {
       const min = Math.min(...durations);
@@ -173,7 +173,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       scoreDetails.durations = 'Aucune tâche détectée (-20)';
     }
     // 2. Dépendances critiques
-    if (Array.isArray(dependencies) && dependencies.some((d: any) => d.level === 'critique')) {
+    if (Array.isArray(dependencies) && dependencies.some((d: { name: string; level: string }) => d.level === 'critique')) {
       confidenceScore -= 15;
       scoreDetails.dependencies = 'Dépendances critiques présentes (-15)';
     } else if (Array.isArray(dependencies) && dependencies.length > 0) {
@@ -208,13 +208,6 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     }
     // Clamp
     confidenceScore = Math.max(10, Math.min(100, confidenceScore));
-
-    // Appliquer le correctif automatique à l'estimation totale si besoin
-    let totalEstimation = durations.reduce((sum: number, d: number) => sum + (d || 0), 0);
-    let correctedEstimation = totalEstimation;
-    if (correctionPct !== 0) {
-      correctedEstimation = Math.round(totalEstimation * (1 + correctionPct / 100));
-    }
 
     // Extraction robuste des tâches (exemple, à adapter selon ton parsing)
     const tasks = [];

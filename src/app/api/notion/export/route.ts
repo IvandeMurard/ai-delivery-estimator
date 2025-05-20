@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const totalDays = result.match(/total de (\d+) jours?/i)?.[1]
 
     // Ajout de la priorité dans les propriétés
-    const properties: any = {
+    const properties: Record<string, unknown> = {
       Name: {
         title: [
           {
