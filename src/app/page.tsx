@@ -107,6 +107,57 @@ export default function EstimationLegacy() {
     return totalDays + buffer;
   }
 
+  // Liste des jours fériés français (métropole, année courante)
+  function getFrenchHolidays(year: number): Date[] {
+    // Jours fixes
+    const holidays = [
+      new Date(year, 0, 1),   // Jour de l'an
+      new Date(year, 4, 1),   // Fête du Travail
+      new Date(year, 4, 8),   // Victoire 1945
+      new Date(year, 6, 14),  // Fête nationale
+      new Date(year, 7, 15),  // Assomption
+      new Date(year, 10, 1),  // Toussaint
+      new Date(year, 10, 11), // Armistice
+      new Date(year, 11, 25), // Noël
+    ];
+    // Jours mobiles (Pâques, Ascension, Pentecôte)
+    // Calcul de Pâques (algorithme de Meeus/Jones/Butcher)
+    const f = Math.floor,
+      G = year % 19,
+      C = f(year / 100),
+      H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
+      I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
+      J = (year + f(year / 4) + I + 2 - C + f(C / 4)) % 7,
+      L = I - J,
+      month = 3 + f((L + 40) / 44),
+      day = L + 28 - 31 * f(month / 4);
+    const easter = new Date(year, month - 1, day);
+    holidays.push(
+      new Date(easter), // Pâques
+      new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 1), // Lundi de Pâques
+      new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 39), // Ascension
+      new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 49), // Pentecôte
+      new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() + 50), // Lundi de Pentecôte
+    );
+    return holidays;
+  }
+
+  // Calcule la date de livraison estimée (exclut week-ends et jours fériés)
+  function computeDeliveryDate(start: string, days: number, excludeWeekends: boolean = true): string {
+    if (!start || days <= 0) return '';
+    let date = new Date(start);
+    let added = 0;
+    const holidays = getFrenchHolidays(date.getFullYear());
+    while (added < days) {
+      date.setDate(date.getDate() + 1);
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const isHoliday = holidays.some(h => h.getDate() === date.getDate() && h.getMonth() === date.getMonth());
+      if ((excludeWeekends && isWeekend) || isHoliday) continue;
+      added++;
+    }
+    return date.toLocaleDateString('fr-FR');
+  }
+
   // Génère la conclusion synthétique pour la section 4 (modèle strict docs/ui-reference.md)
   function getConclusionSynth() {
     if (!feature || !totalDays) return '';
@@ -121,8 +172,9 @@ export default function EstimationLegacy() {
     let txt = `Le développement de la fonctionnalité est estimé à ${totalWithBuffer} jours ouvrés`;
     if (buffer > 0) txt += ` (incluant un buffer de sécurité de ${bufferPct}%)`;
     txt += ".";
-    if (deliveryDate && deliveryDate !== '-') {
-      txt += `\nLa date de livraison réaliste serait autour du ${formatDateFR(deliveryDate)}.`;
+    const dateToShow = deliveryDate && deliveryDate !== '-' ? deliveryDate : computeDeliveryDate(startDate, getTotalWithBuffer(), excludeWeekends);
+    if (dateToShow) {
+      txt += `\nLa date de livraison réaliste serait autour du ${formatDateFR(dateToShow)}.`;
     }
     txt += "\nCette estimation prend en compte la capacité de l'équipe, les absences, les dépendances et les risques déclarés.";
     return txt;
@@ -253,7 +305,7 @@ export default function EstimationLegacy() {
               <span className="text-lg font-bold text-blue-900">Livraison estimée</span>
             </div>
             <div className="text-[#222] text-[15px] font-bold mb-1">
-              {deliveryDate ? (
+              {getTotalWithBuffer() > 0 && startDate ? (
                 <span>Livraison estimée : <span className="text-green-600">{deliveryDate}</span></span>
               ) : (
                 <span className="text-gray-400 italic">Veuillez lancer l&apos;analyse IA.</span>
