@@ -1,0 +1,33 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+.next
+out
+dist
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+
+# Tests & coverage
+coverage
+*.test.*
+*.spec.*
+
+# Monorepo: ignorer tout sauf delivery-estimator
+!delivery-estimator/
+ai-time-capsule-final/
+amy-torrilhon-anthologie-Lovable/
+dev-estimator/
+scripts/
+src/
+
+# Git ignore
+.gitignore 
