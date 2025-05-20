@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -10,8 +10,8 @@ export async function GET() {
     const feedbacks = JSON.parse(content);
     // On ne garde que les feedbacks avec un score NPS valide
     const npsFeedbacks = feedbacks
-      .filter((f: any) => typeof f.nps === 'number')
-      .map((f: any) => ({
+      .filter((f: { nps: number }) => typeof f.nps === 'number')
+      .map((f: { feature: string; nps: number; comment: string; date: string }) => ({
         feature: f.feature || '',
         npsScore: f.nps,
         date: f.date,

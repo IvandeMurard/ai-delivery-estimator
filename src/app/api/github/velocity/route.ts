@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
   const issues = await issuesRes.json();
   // Filtrer les PRs et ne garder que les issues fermées avec une date de fermeture
   const closedIssues = (Array.isArray(issues) ? issues : [])
-    .filter((i: any) => !i.pull_request && i.closed_at && i.created_at)
-    .map((i: any) => ({
+    .filter((i: { pull_request?: unknown; closed_at?: string; created_at?: string }) => !i.pull_request && i.closed_at && i.created_at)
+    .map((i: { created_at: string; closed_at: string }) => ({
       created_at: i.created_at,
       closed_at: i.closed_at,
     }));

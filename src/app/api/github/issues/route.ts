@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   });
   const issues = await issuesRes.json();
   // Filtrer les PRs
-  const filtered = (Array.isArray(issues) ? issues : []).filter((i: any) => !i.pull_request).map((i: any) => ({
+  const filtered = (Array.isArray(issues) ? issues : []).filter((i: { pull_request?: unknown }) => !i.pull_request).map((i: { title: string; created_at: string; closed_at: string; state: string; number: number }) => ({
     title: i.title,
     created_at: i.created_at,
     closed_at: i.closed_at,

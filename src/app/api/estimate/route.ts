@@ -6,7 +6,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { feature, capacity = 1, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks } = body
+    const { feature, integrationLevel = '', dataConcern = '', startDate = '', githubVelocity, team = [], totalCapacity, priority, dependencies, velocitySource, velocityData, teamCapacity, teamAbsences, excludeWeekends, realCapacity, estimationPeriod, risks, sector, stack, clientType, constraints } = body
 
     // Détermine la date de départ à utiliser dans le prompt
     const startDatePrompt = startDate
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     let teamPrompt = '';
     if (Array.isArray(team) && team.length > 0) {
       teamPrompt = `\nComposition de l'équipe et capacité réelle :\n`;
-      team.forEach((m: any, idx: number) => {
+      team.forEach((m: { name?: string; percent?: number; comment?: string }, idx: number) => {
         teamPrompt += `- ${m.name ? m.name : 'Membre ' + (idx + 1)} : ${m.percent || 0}% du temps. ${m.comment ? 'Commentaires : ' + m.comment : ''}\n`;
       });
       if (totalCapacity !== undefined) {
@@ -45,19 +45,24 @@ export async function POST(request: NextRequest) {
     // Dépendances et risques
     let dependenciesPrompt = '';
     if (Array.isArray(dependencies) && dependencies.length > 0) {
-      const crit = dependencies.filter((d: any) => d.level === 'critique');
-      const mod = dependencies.filter((d: any) => d.level === 'modérée');
-      const min = dependencies.filter((d: any) => d.level === 'mineure');
+      const crit = dependencies.filter((d: { name: string; level: string }) => d.level === 'critique');
+      const mod = dependencies.filter((d: { name: string; level: string }) => d.level === 'modérée');
+      const min = dependencies.filter((d: { name: string; level: string }) => d.level === 'mineure');
       dependenciesPrompt = `\nDépendances techniques à prendre en compte :\n`;
-      if (crit.length > 0) dependenciesPrompt += `- Critiques : ${crit.map((d: any) => d.name).join(', ')}\n`;
-      if (mod.length > 0) dependenciesPrompt += `- Modérées : ${mod.map((d: any) => d.name).join(', ')}\n`;
-      if (min.length > 0) dependenciesPrompt += `- Mineures : ${min.map((d: any) => d.name).join(', ')}\n`;
+      if (crit.length > 0) dependenciesPrompt += `- Critiques : ${crit.map((d: { name: string }) => d.name).join(', ')}\n`;
+      if (mod.length > 0) dependenciesPrompt += `- Modérées : ${mod.map((d: { name: string }) => d.name).join(', ')}\n`;
+      if (min.length > 0) dependenciesPrompt += `- Mineures : ${min.map((d: { name: string }) => d.name).join(', ')}\n`;
       dependenciesPrompt += `Merci d'ajouter un buffer de sécurité pour les dépendances critiques et de pondérer l'estimation selon le niveau de risque.`;
     }
     let risksPrompt = '';
     if (typeof risks === 'string' && risks.trim().length > 0) {
       risksPrompt = `\nRisques identifiés : ${risks.trim()}\nMerci d'en tenir compte pour ajuster la confiance et la date de livraison.`;
     }
+
+    const sectorPrompt = `\nSecteur d'activité : ${sector || 'Non précisé'}`;
+    const stackPrompt = `\nStack technique : ${stack || 'Non précisé'}`;
+    const clientTypePrompt = `\nType de client : ${clientType || 'Non précisé'}`;
+    const constraintsPrompt = `\nContraintes spécifiques : ${constraints || 'Aucune'}`;
 
     // Lecture des feedbacks et calcul de l'écart moyen
     let feedbackPhrase = '';
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
         const last = feedbacks.slice(-5); // 5 derniers
         let sumPct = 0;
         let count = 0;
-        last.forEach((f: any) => {
+        last.forEach((f: { estimation: number; realDuration: number }) => {
           const est = Number(f.estimation);
           const real = Number(f.realDuration);
           if (est > 0 && real > 0) {
@@ -111,8 +116,13 @@ ${startDatePrompt}
 ${velocityPrompt}
 ${teamPrompt}
 ${priorityPrompt}
-${dependenciesPrompt}${risksPrompt}
+${dependenciesPrompt}${risksPrompt}${sectorPrompt}${stackPrompt}${clientTypePrompt}${constraintsPrompt}
 ${feedbackPhrase}
+
+IMPORTANT :
+- Adapte le découpage des tâches, la marge de sécurité, la gestion des risques et la pédagogie de l'estimation en fonction du secteur d'activité, de la stack technique, du type de client et des contraintes spécifiques indiquées ci-dessus.
+- Si le secteur implique des exigences particulières (sécurité, conformité, accessibilité, etc.), ajoute un buffer adapté et explique-le.
+- Si le type de client est "Grand groupe", prévois une marge supplémentaire pour la coordination et la validation.
 
 Découpe la fonctionnalité en tâches techniques avec estimation.
 Puis calcule une date de livraison réaliste en tenant compte des contraintes ci-dessus.
@@ -145,9 +155,8 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       const d = m.match(/(\d+)\s*jours?/);
       return d ? parseInt(d[1], 10) : null;
     }).filter(Boolean);
-    const nbTasks = durations.length;
     let confidenceScore = 80;
-    let scoreDetails: any = {};
+    const scoreDetails: Record<string, string> = {};
     // 1. Dispersion des durées
     if (durations.length > 1) {
       const min = Math.min(...durations);
@@ -168,7 +177,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       scoreDetails.durations = 'Aucune tâche détectée (-20)';
     }
     // 2. Dépendances critiques
-    if (Array.isArray(dependencies) && dependencies.some((d: any) => d.level === 'critique')) {
+    if (Array.isArray(dependencies) && dependencies.some((d: { name: string; level: string }) => d.level === 'critique')) {
       confidenceScore -= 15;
       scoreDetails.dependencies = 'Dépendances critiques présentes (-15)';
     } else if (Array.isArray(dependencies) && dependencies.length > 0) {
@@ -203,13 +212,6 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
     }
     // Clamp
     confidenceScore = Math.max(10, Math.min(100, confidenceScore));
-
-    // Appliquer le correctif automatique à l'estimation totale si besoin
-    let totalEstimation = durations.reduce((sum: number, d: number) => sum + (d || 0), 0);
-    let correctedEstimation = totalEstimation;
-    if (correctionPct !== 0) {
-      correctedEstimation = Math.round(totalEstimation * (1 + correctionPct / 100));
-    }
 
     // Extraction robuste des tâches (exemple, à adapter selon ton parsing)
     const tasks = [];
@@ -249,7 +251,7 @@ Puis calcule une date de livraison réaliste en tenant compte des contraintes ci
       aiCorrection,
       aiText
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Invalid request' },
       { status: 400 }
