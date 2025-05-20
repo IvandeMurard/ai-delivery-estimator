@@ -54,11 +54,25 @@ export default function EstimationLegacy() {
   const [nps, setNps] = useState("");
   const [npsComment, setNpsComment] = useState("");
   const [npsHistory, setNpsHistory] = useState<{ nps: string; comment: string; date: string }[]>([]);
+  const [npsError, setNpsError] = useState("");
+  const [npsSuccess, setNpsSuccess] = useState("");
+
   const handleSendNps = () => {
-    if (!nps) return;
+    setNpsError("");
+    setNpsSuccess("");
+    const npsValue = Number(nps);
+    if (!nps || isNaN(npsValue) || npsValue < 0 || npsValue > 10) {
+      setNpsError("Merci de saisir une note entre 0 et 10.");
+      return;
+    }
+    if (!npsComment.trim()) {
+      setNpsError("Merci d'ajouter un commentaire.");
+      return;
+    }
     setNpsHistory([{ nps, comment: npsComment, date: new Date().toLocaleString() }, ...npsHistory]);
     setNps("");
     setNpsComment("");
+    setNpsSuccess("Merci pour votre retour !");
   };
 
   // Exports (mock)
@@ -381,6 +395,8 @@ export default function EstimationLegacy() {
                 <input type="text" className="rounded border px-2 py-1.5 flex-1 text-[#222] bg-white text-[14px]" placeholder="Un commentaire ?" value={npsComment} onChange={e => setNpsComment(e.target.value)} />
                 <button className="px-2 py-1.5 bg-orange-500 text-white rounded font-bold text-[14px]" onClick={handleSendNps} disabled={!nps}>Envoyer</button>
               </div>
+              {npsError && <div className="text-red-600 text-xs mt-1">{npsError}</div>}
+              {npsSuccess && <div className="text-green-700 text-xs mt-1">{npsSuccess}</div>}
               {npsHistory.length > 0 && (
                 <div className="mt-1">
                   <div className="font-semibold text-xs mb-1 text-[#444]">Historique :</div>
