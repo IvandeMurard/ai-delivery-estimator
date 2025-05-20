@@ -127,7 +127,7 @@ export default function EstimationLegacy() {
               <input type="number" min={0} max={100} className="rounded border px-2 py-1.5 w-full text-[#222] bg-white text-[14px]" value={teamCapacity} onChange={e => setTeamCapacity(Number(e.target.value))} />
             </div>
             <div className="flex-1 min-w-[90px]">
-              <label className="block font-semibold text-[#222] mb-1">Jours d'absence</label>
+              <label className="block font-semibold text-[#222] mb-1">Jours d&apos;absence</label>
               <input type="number" min={0} className="rounded border px-2 py-1.5 w-full text-[#222] bg-white text-[14px]" value={teamAbsences} onChange={e => setTeamAbsences(Number(e.target.value))} />
             </div>
           </div>
