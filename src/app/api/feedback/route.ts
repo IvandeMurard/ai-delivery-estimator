@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   if (!feature || typeof nps !== 'number') {
     return NextResponse.json({ error: 'feature et nps requis' }, { status: 400 });
   }
-  let feedbacks: { nps: number; comment: string; date: string }[] = [];
+  let feedbacks: { feature: string; nps: number; comment: string; date: string }[] = [];
   try {
     const content = await fs.readFile(FEEDBACK_PATH, 'utf-8');
     feedbacks = JSON.parse(content);
