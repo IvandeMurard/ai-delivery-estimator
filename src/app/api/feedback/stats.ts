@@ -11,7 +11,7 @@ export async function GET() {
     // On ne garde que les feedbacks avec un score NPS valide
     const npsFeedbacks = feedbacks
       .filter((f: { nps: number }) => typeof f.nps === 'number')
-      .map((f: { nps: number; comment: string; date: string }) => ({
+      .map((f: { feature: string; nps: number; comment: string; date: string }) => ({
         feature: f.feature || '',
         npsScore: f.nps,
         date: f.date,
