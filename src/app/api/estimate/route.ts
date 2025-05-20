@@ -59,10 +59,10 @@ export async function POST(request: NextRequest) {
       risksPrompt = `\nRisques identifiés : ${risks.trim()}\nMerci d'en tenir compte pour ajuster la confiance et la date de livraison.`;
     }
 
-    const sectorPrompt = sector ? `\nSecteur d'activité : ${sector}` : '';
-    const stackPrompt = stack ? `\nStack technique : ${stack}` : '';
-    const clientTypePrompt = clientType ? `\nType de client : ${clientType}` : '';
-    const constraintsPrompt = constraints ? `\nContraintes spécifiques : ${constraints}` : '';
+    const sectorPrompt = `\nSecteur d'activité : ${sector || 'Non précisé'}`;
+    const stackPrompt = `\nStack technique : ${stack || 'Non précisé'}`;
+    const clientTypePrompt = `\nType de client : ${clientType || 'Non précisé'}`;
+    const constraintsPrompt = `\nContraintes spécifiques : ${constraints || 'Aucune'}`;
 
     // Lecture des feedbacks et calcul de l'écart moyen
     let feedbackPhrase = '';
@@ -118,6 +118,11 @@ ${teamPrompt}
 ${priorityPrompt}
 ${dependenciesPrompt}${risksPrompt}${sectorPrompt}${stackPrompt}${clientTypePrompt}${constraintsPrompt}
 ${feedbackPhrase}
+
+IMPORTANT :
+- Adapte le découpage des tâches, la marge de sécurité, la gestion des risques et la pédagogie de l'estimation en fonction du secteur d'activité, de la stack technique, du type de client et des contraintes spécifiques indiquées ci-dessus.
+- Si le secteur implique des exigences particulières (sécurité, conformité, accessibilité, etc.), ajoute un buffer adapté et explique-le.
+- Si le type de client est "Grand groupe", prévois une marge supplémentaire pour la coordination et la validation.
 
 Découpe la fonctionnalité en tâches techniques avec estimation.
 Puis calcule une date de livraison réaliste en tenant compte des contraintes ci-dessus.
