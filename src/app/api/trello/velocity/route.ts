@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // https://help.trello.com/article/759-getting-the-time-a-card-or-board-was-created
     return new Date(parseInt(id.substring(0,8), 16) * 1000);
   }
-  const cardsWithDates = closedCards.map((c: { closed: boolean; dateLastActivity?: string }) => ({
+  const cardsWithDates = closedCards.map((c: { closed: boolean; id: string; dateLastActivity?: string }) => ({
     created_at: getCreatedAtFromId(c.id),
     closed_at: new Date(c.dateLastActivity)
   }));
