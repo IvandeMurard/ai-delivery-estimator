@@ -29,6 +29,10 @@ export default function EstimationLegacy() {
   const [dependencies, setDependencies] = useState<string>("");
   const [risks, setRisks] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sector, setSector] = useState("");
+  const [stack, setStack] = useState("");
+  const [clientType, setClientType] = useState("");
+  const [constraints, setConstraints] = useState("");
 
   // Découpage & estimation (initialisé à vide)
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -77,6 +81,10 @@ export default function EstimationLegacy() {
           velocitySource,
           dependencies,
           risks,
+          sector,
+          stack,
+          clientType,
+          constraints,
         }),
       });
       if (!res.ok) throw new Error("Erreur API");
@@ -176,6 +184,20 @@ export default function EstimationLegacy() {
     if (dateToShow) {
       txt += `\nLa date de livraison réaliste serait autour du ${formatDateFR(dateToShow)}.`;
     }
+    // Ajout du message conditionnel sur la marge de sécurité
+    if (buffer > 0) {
+      if (sector && constraints) {
+        txt += `\nLa marge de sécurité a été ajustée en fonction du secteur d'activité (« ${sector} ») et des contraintes spécifiques (« ${constraints} »).`;
+      } else if (sector) {
+        txt += `\nLa marge de sécurité a été ajustée en fonction du secteur d'activité (« ${sector} »).`;
+      } else if (constraints) {
+        txt += `\nLa marge de sécurité a été ajustée en fonction des contraintes spécifiques (« ${constraints} »).`;
+      }
+      // Ajout de la phrase d'impact
+      if (sector || constraints) {
+        txt += `\nCela a entraîné l'ajout d'un buffer de sécurité de +${buffer} jours, soit ${bufferPct}% du total, pour tenir compte de ces spécificités.`;
+      }
+    }
     txt += "\nCette estimation prend en compte la capacité de l'équipe, les absences, les dépendances et les risques déclarés.";
     return txt;
   }
@@ -231,6 +253,20 @@ export default function EstimationLegacy() {
               <input className="rounded border px-2 py-1.5 w-full text-[#222] bg-white text-[14px]" value={risks} onChange={e => setRisks(e.target.value)} placeholder="Ex : instabilité API, dette technique, etc." />
             </div>
           </div>
+          <label className="block font-semibold text-[#222] mb-1">Secteur d'activité</label>
+          <input className="rounded border px-2 py-1.5 w-full text-[#222] bg-white mb-1 text-[14px]" value={sector} onChange={e => setSector(e.target.value)} placeholder="Ex : Santé, Finance, Éducation..." />
+          <label className="block font-semibold text-[#222] mb-1">Stack technique</label>
+          <input className="rounded border px-2 py-1.5 w-full text-[#222] bg-white mb-1 text-[14px]" value={stack} onChange={e => setStack(e.target.value)} placeholder="Ex : React, Node.js, AWS..." />
+          <label className="block font-semibold text-[#222] mb-1">Type de client</label>
+          <select className="rounded border px-2 py-1.5 w-full text-[#222] bg-white mb-1 text-[14px]" value={clientType} onChange={e => setClientType(e.target.value)}>
+            <option value="">Sélectionner</option>
+            <option value="Startup">Startup</option>
+            <option value="PME">PME</option>
+            <option value="Grand groupe">Grand groupe</option>
+            <option value="Autre">Autre</option>
+          </select>
+          <label className="block font-semibold text-[#222] mb-1">Contraintes spécifiques</label>
+          <input className="rounded border px-2 py-1.5 w-full text-[#222] bg-white mb-1 text-[14px]" value={constraints} onChange={e => setConstraints(e.target.value)} placeholder="Ex : RGPD, sécurité, accessibilité..." />
           <button className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded shadow-sm disabled:opacity-50 font-bold text-[14px]" disabled={isAnalyzing || !feature || !startDate} onClick={handleAnalyze}>
             {isAnalyzing ? "Analyse en cours..." : "Analyser avec l'IA"}
           </button>
