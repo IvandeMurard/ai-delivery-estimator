@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
   const cardsWithDates = closedCards.map((c: { closed: boolean; id: string; dateLastActivity?: string }) => ({
     created_at: getCreatedAtFromId(c.id),
-    closed_at: new Date(c.dateLastActivity)
+    closed_at: new Date(c.dateLastActivity!)
   }));
   // Calculer la période analysée (en semaines)
   const dates = cardsWithDates.map(i => i.closed_at);
